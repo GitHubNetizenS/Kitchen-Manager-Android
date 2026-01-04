@@ -1,0 +1,15 @@
+<!-- res/menu/bottom_nav_menu.xml -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/home_icon_selector"
+        android:title="首页" />
+    <item
+        android:id="@+id/nav_kitchen"
+        android:icon="@drawable/kitchen_icon_selector"
+        android:title="厨房" />
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/mine_icon_selector"
+        android:title="我的" />
+</menu>
