@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="@drawable/bg">
+
+    <!-- 搜索栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/et_search"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:background="#FFFFFF"
+            android:hint="搜索食材或工具"
+            android:textSize="14sp"
+            android:textColor="#505050"/>
+
+        <ImageView
+            android:id="@+id/iv_add"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginLeft="16dp"
+            android:padding="12dp"
+            android:background="#FF8C00"
+            android:src="@drawable/add"
+            android:contentDescription="添加食材" />
+    </LinearLayout>
+
+    <!-- 分类标签栏 -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tl_categories"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        app:tabIndicatorColor="#FF8C00"
+        app:tabIndicatorHeight="4dp"
+        app:tabMode="scrollable"
+        app:tabPaddingStart="16dp"
+        app:tabPaddingEnd="16dp"
+        app:tabSelectedTextColor="#FF8C00"
+        app:tabTextColor="#666666"
+        app:tabTextAppearance="@style/TabTextStyle" />
+
+    <!-- 食材列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_ingredients"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp" />
+</LinearLayout>
