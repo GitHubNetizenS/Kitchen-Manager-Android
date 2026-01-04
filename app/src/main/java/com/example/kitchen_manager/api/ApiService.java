@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.0.2.2:8080/KitchenManagerServer/";
+    String BASE_URL = "http://10.0.2.2:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
