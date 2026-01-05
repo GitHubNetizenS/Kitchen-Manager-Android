@@ -21,7 +21,6 @@ import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
-import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
