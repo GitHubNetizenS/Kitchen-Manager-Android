@@ -122,9 +122,15 @@ public class RecommendFragment extends Fragment {
         // 更新适配器接口实现
         adapter = new RecipeAdapter(getContext(), new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
-            public void onFavoriteClick(int recipeId) {
-                // 调用收藏方法
-                favoriteRecipe(recipeId);
+            public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
+                // 根据当前状态决定是收藏还是取消收藏
+                if (isCurrentlyFavorite) {
+                    // 如果已收藏，则取消收藏
+                    unfavoriteRecipe(recipeId);
+                } else {
+                    // 如果未收藏，则收藏
+                    favoriteRecipe(recipeId);
+                }
             }
 
             @Override
@@ -223,6 +229,46 @@ public class RecommendFragment extends Fragment {
         loadRecipesByTag(currentTag);
 
         return view;
+    }
+
+    // 在 RecommendFragment.java 中添加取消收藏方法
+    private void unfavoriteRecipe(int recipeId) {
+        if (userId == -1) {
+            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Call<ApiResponse<Void>> call = apiService.unfavoriteRecipe(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call,
+                                   Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+
+                    if (apiResponse.getCode() == 200) {
+                        // 取消收藏成功，更新本地状态
+                        updateLocalFavoriteStatus(recipeId, false);
+                        Toast.makeText(requireContext(), "已取消收藏", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), "取消收藏失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "取消收藏失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                String errorMsg = "网络错误: " + t.getMessage();
+                if (t instanceof SocketTimeoutException) {
+                    errorMsg = "请求超时，请检查网络";
+                } else if (t instanceof ConnectException) {
+                    errorMsg = "无法连接到服务器";
+                }
+                Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateButtonState(Button selectedButton) {

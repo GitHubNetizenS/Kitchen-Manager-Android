@@ -109,8 +109,9 @@ public class FavoriteActivity extends AppCompatActivity {
 
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
-            public void onFavoriteClick(int recipeId) {
+            public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
                 if (!isEditMode) {
+                    // 在收藏页面，点击收藏图标就是取消收藏
                     unfavoriteRecipe(recipeId);
                 }
             }
