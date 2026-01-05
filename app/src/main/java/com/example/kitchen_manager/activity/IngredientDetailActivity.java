@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -107,6 +108,12 @@ public class IngredientDetailActivity extends AppCompatActivity {
         tvNutrition = findViewById(R.id.tv_nutrition);
         tvBenefit = findViewById(R.id.tv_benefit);
 
+        ivBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish(); // 结束当前Activity，返回上一页面
+            }
+        });
         // 设置分类下拉菜单
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, CATEGORIES);
