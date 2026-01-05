@@ -130,6 +130,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         // 详情图标点击
         holder.ivDetail.setOnClickListener(v -> {
             if (listener != null) {
+                Log.d("RecipeAdapter", "点击 recipeId = " + recipe.getRecipeId());
                 listener.onDetailClick(recipe.getRecipeId());
             }
         });
