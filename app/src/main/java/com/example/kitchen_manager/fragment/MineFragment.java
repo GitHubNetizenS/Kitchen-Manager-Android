@@ -51,7 +51,7 @@ public class MineFragment extends Fragment {
     private ApiService apiService;
     private CardView cardFavorites, cardHistory, cardTaste, cardPeople, cardSpecial;
 
-    // 添加 userId 成员变量
+    // 用户ID从SharedPreferences获取
     private int userId = -1;
 
     // 存储用户选择的标签
@@ -89,6 +89,7 @@ public class MineFragment extends Fragment {
 
         // 获取用户ID
         userId = prefs.getInt("user_id", -1);
+        Log.d("MineFragment", "当前用户ID: " + userId);
 
         // 初始化标签分类
         selectedTags.put("菜品口味", new HashSet<>());
@@ -108,10 +109,10 @@ public class MineFragment extends Fragment {
         // 获取最新用户信息
         fetchUserProfile();
 
-        // 获取收藏数量
+        // 获取收藏数量（每次从服务器重新获取，不缓存）
         fetchFavoriteCount();
 
-        // 获取烹饪记录数量
+        // 获取烹饪记录数量（每次从服务器重新获取，不缓存）
         fetchHistoryCount();
 
         // 加载标签数据
@@ -321,13 +322,10 @@ public class MineFragment extends Fragment {
             String name = prefs.getString("username", "");
             String title = prefs.getString("title", "");
             String avatarUrl = prefs.getString("avatar_url", "");
-            int favCount = prefs.getInt("favorite_count", 0);
-            int historyCount = prefs.getInt("history_count", 0);
+            // 不再从缓存读取收藏和历史记录数量
 
             tvName.setText(name);
             tvTitle.setText(title);
-            tvFavAmount.setText(String.valueOf(favCount));
-            tvHistoryAmount.setText(String.valueOf(historyCount));
 
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 Picasso.get()
@@ -391,9 +389,10 @@ public class MineFragment extends Fragment {
         }
     }
 
-    // 获取收藏数量
+    // 获取收藏数量 - 直接从服务器获取，不缓存
     private void fetchFavoriteCount() {
         if (userId != -1) {
+            tvFavAmount.setText("加载中...");
             Call<ApiResponse<Integer>> call = apiService.getFavoriteCount(userId);
             call.enqueue(new Callback<ApiResponse<Integer>>() {
                 @Override
@@ -403,24 +402,20 @@ public class MineFragment extends Fragment {
                         if (apiResponse.getCode() == 200) {
                             int count = apiResponse.getData();
                             tvFavAmount.setText(String.valueOf(count));
-
-                            // 保存到缓存
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putInt("favorite_count", count);
-                            editor.apply();
+                        } else {
+                            tvFavAmount.setText("0");
+                            Log.e("MineFragment", "获取收藏数量失败: " + apiResponse.getMessage());
                         }
                     } else {
-                        // 使用缓存数据
-                        int cachedCount = prefs.getInt("favorite_count", 0);
-                        tvFavAmount.setText(String.valueOf(cachedCount));
+                        tvFavAmount.setText("0");
+                        Log.e("MineFragment", "获取收藏数量失败: 服务器响应错误");
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
-                    // 使用缓存数据
-                    int cachedCount = prefs.getInt("favorite_count", 0);
-                    tvFavAmount.setText(String.valueOf(cachedCount));
+                    tvFavAmount.setText("0");
+                    Log.e("MineFragment", "获取收藏数量失败", t);
                 }
             });
         } else {
@@ -428,9 +423,10 @@ public class MineFragment extends Fragment {
         }
     }
 
-    // 获取历史记录数量
+    // 获取历史记录数量 - 直接从服务器获取，不缓存
     private void fetchHistoryCount() {
         if (userId != -1) {
+            tvHistoryAmount.setText("加载中...");
             Call<ApiResponse<Integer>> call = apiService.getHistoryCount(userId);
             call.enqueue(new Callback<ApiResponse<Integer>>() {
                 @Override
@@ -440,24 +436,20 @@ public class MineFragment extends Fragment {
                         if (apiResponse.getCode() == 200) {
                             int count = apiResponse.getData();
                             tvHistoryAmount.setText(String.valueOf(count));
-
-                            // 保存到缓存
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putInt("history_count", count);
-                            editor.apply();
+                        } else {
+                            tvHistoryAmount.setText("0");
+                            Log.e("MineFragment", "获取历史记录数量失败: " + apiResponse.getMessage());
                         }
                     } else {
-                        // 使用缓存数据
-                        int cachedCount = prefs.getInt("history_count", 0);
-                        tvHistoryAmount.setText(String.valueOf(cachedCount));
+                        tvHistoryAmount.setText("0");
+                        Log.e("MineFragment", "获取历史记录数量失败: 服务器响应错误");
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
-                    // 使用缓存数据
-                    int cachedCount = prefs.getInt("history_count", 0);
-                    tvHistoryAmount.setText(String.valueOf(cachedCount));
+                    tvHistoryAmount.setText("0");
+                    Log.e("MineFragment", "获取历史记录数量失败", t);
                 }
             });
         } else {
@@ -469,15 +461,20 @@ public class MineFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PROFILE_EDIT_REQUEST && resultCode == Activity.RESULT_OK) {
-            // 直接更新本地数据
-            updateUserInfoDisplay();
+            // 刷新数据
+            fetchUserProfile();
         }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // 每次显示时刷新数据
+        // 每次显示时重新获取用户ID，因为可能用户已经登录或退出
+        userId = prefs.getInt("user_id", -1);
+        Log.d("MineFragment", "onResume - 当前用户ID: " + userId);
+
+        // 每次显示时刷新所有数据
+        updateUserInfoDisplay();
         fetchUserProfile();
         fetchFavoriteCount();
         fetchHistoryCount();
