@@ -3,12 +3,12 @@ package com.example.kitchen_manager.response;
 import com.google.gson.annotations.SerializedName;
 
 public class RecipeDetailResponse {
-    @SerializedName("recipeId")
+    @SerializedName("recipe_id")
     private int recipeId;
 
     private String name;
 
-    @SerializedName("imageUrl")
+    @SerializedName("image_url")
     private String imageUrl;
 
     private String taste;
