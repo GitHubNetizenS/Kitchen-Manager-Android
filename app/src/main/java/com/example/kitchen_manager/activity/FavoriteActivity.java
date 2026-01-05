@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,7 +34,7 @@ public class FavoriteActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView emptyView;
     private Button btnSortTime, btnSortMatch;
-
+    private ImageView ivBack;
     private int userId = 1; // 示例ID
     private ApiService apiService;
 
@@ -47,12 +48,14 @@ public class FavoriteActivity extends AppCompatActivity {
         rvRecipes = findViewById(R.id.rv_recipes);
         progressBar = findViewById(R.id.progressBar);
         emptyView = findViewById(R.id.emptyView);
-
+        ivBack = findViewById(R.id.iv_back);
         btnSortTime = findViewById(R.id.btn_sort_time);
         btnSortMatch = findViewById(R.id.btn_sort_match);
 
         // 初始化按钮状态
         updateButtonState(true);
+
+        ivBack.setOnClickListener(v -> finish());
 
         btnSortTime.setOnClickListener(v -> {
             updateButtonState(true);
