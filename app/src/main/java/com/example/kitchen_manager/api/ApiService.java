@@ -99,13 +99,13 @@ public interface ApiService {
     Call<ApiResponse<List<Ingredient>>> getRecipeIngredients(@Query("recipe_id") int recipeId);
 
     // 删除用户库存中的食材
-    // 删除用户库存中的食材
     @FormUrlEncoded
     @POST("api/user/ingredients/delete")
     Call<ApiResponse<Void>> deleteUserIngredients(
             @Field("user_id") int userId,
             @Field("ingredient_ids") String ingredientIdsJson // 改为字符串类型
     );
+
     // 获取用户收藏的菜谱（新增）
     @GET("api/favorites")
     Call<ApiResponse<List<RecipeResponse>>> getFavoriteRecipes(
