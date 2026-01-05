@@ -121,7 +121,7 @@ public class FavoriteActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        }, RecipeAdapter.PAGE_TYPE_FVORITE);
+        }, RecipeAdapter.PAGE_TYPE_FAVORITE);
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序

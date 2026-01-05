@@ -40,7 +40,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     // 新增：页面类型常量
     public static final int PAGE_TYPE_NORMAL = 0;    // 普通页面（显示原材料）
     public static final int PAGE_TYPE_HISTORY = 1;   // 历史记录页面（显示烹饪时间）
-    public static final int PAGE_TYPE_FVORITE = 2;   // 收藏页面
+    public static final int PAGE_TYPE_FAVORITE = 2;   // 收藏页面
     private int pageType = PAGE_TYPE_NORMAL;
 
     public interface OnItemClickListener {
@@ -131,6 +131,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         selectedIds.remove(id);
     }
 
+    // 第一部分代码中的方法：历史记录页面的全选
     public void selectAllHistory(boolean select) {
         selectedIds.clear();
         if (select) {
@@ -140,7 +141,18 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         }
     }
 
+    // 第一部分代码中的方法：收藏页面的全选
     public void selectAllFavorite(boolean select) {
+        selectedIds.clear();
+        if (select) {
+            for (RecipeResponse recipe : recipeList) {
+                selectedIds.add(recipe.getRecipeId());
+            }
+        }
+    }
+
+    // 第二部分代码中的方法：通用的全选
+    public void selectAll(boolean select) {
         selectedIds.clear();
         if (select) {
             for (RecipeResponse recipe : recipeList) {
@@ -172,26 +184,26 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
         // 关键修改：根据页面类型显示不同内容
         if (pageType == PAGE_TYPE_HISTORY) {
-            // 历史记录页面：显示烹饪时间
+            // 历史记录页面：显示烹饪时间（第一部分代码的逻辑）
             String cookTimeText = formatCookTime(recipe.getCookTime());
             holder.tvRecipeNeeds.setText(cookTimeText);
         } else {
-            // 普通页面：显示原材料
+            // 普通页面：显示原材料（第一部分代码的逻辑）
             String formattedNeeds = formatNeeds(recipe.getNeeds());
             holder.tvRecipeNeeds.setText(formattedNeeds);
         }
 
-        // 图片加载
+        // 图片加载（合并两部分的配置）
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
             Glide.with(context)
                     .load(recipe.getImageUrl())
                     .placeholder(R.drawable.placeholder)
                     .error(R.drawable.placeholder)
-                    .thumbnail(0.25f)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .skipMemoryCache(false)
-                    .override(300, 300)
-                    .centerCrop()
+                    .thumbnail(0.25f) // 第二部分代码的优化
+                    .diskCacheStrategy(DiskCacheStrategy.ALL) // 第二部分代码的优化
+                    .skipMemoryCache(false) // 第二部分代码的优化
+                    .override(300, 300) // 第二部分代码的优化
+                    .centerCrop() // 第二部分代码的优化
                     .into(holder.ivRecipeImage);
         } else {
             holder.ivRecipeImage.setImageResource(R.drawable.placeholder);
@@ -202,14 +214,14 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 R.drawable.ic_favorite : R.drawable.ic_favorite_border;
         holder.ivFavorite.setImageResource(favoriteIcon);
 
-        // 设置收藏按钮点击事件
+        // 设置收藏按钮点击事件（第一部分代码的逻辑）
         holder.ivFavorite.setOnClickListener(v -> {
             if (!isEditMode) {
                 listener.onFavoriteClick(recipe.getRecipeId());
             }
         });
 
-        // 详情图标点击
+        // 详情图标点击（第一部分代码的逻辑，保留Log）
         holder.ivDetail.setOnClickListener(v -> {
             if (!isEditMode) {
                 Log.d("RecipeAdapter", "点击 recipeId = " + recipe.getRecipeId());
@@ -217,33 +229,81 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             }
         });
 
-        // 编辑模式处理
+        // 编辑模式处理（合并两部分的逻辑）
         holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
         if (isEditMode) {
             holder.cbSelect.setOnCheckedChangeListener(null);
-            holder.cbSelect.setChecked(selectedIds.contains(recipe.getHistoryId())); // 使用historyId
-            holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (pageType==1)
-                {
+
+            // 第一部分代码的选择逻辑
+            if (pageType == PAGE_TYPE_HISTORY) {
+                holder.cbSelect.setChecked(selectedIds.contains(recipe.getHistoryId()));
+                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     if (isChecked) {
-                        selectedIds.add(recipe.getHistoryId()); // 使用historyId
+                        selectedIds.add(recipe.getHistoryId());
                     } else {
-                        selectedIds.remove(recipe.getHistoryId()); // 使用historyId
+                        selectedIds.remove(recipe.getHistoryId());
                     }
-                }
-                else if(pageType==2)
-                {
+                });
+            } else if (pageType == PAGE_TYPE_FAVORITE) {
+                holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
+                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     if (isChecked) {
-                        selectedIds.add(recipe.getRecipeId()); // 使用recipeId
+                        selectedIds.add(recipe.getRecipeId());
                     } else {
-                        selectedIds.remove(recipe.getRecipeId()); // 使用recipeId
+                        selectedIds.remove(recipe.getRecipeId());
                     }
-                }
-            });
+                });
+            } else {
+                // 第二部分代码的选择逻辑
+                holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
+                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (isChecked) {
+                        selectedIds.add(recipe.getRecipeId());
+                    } else {
+                        selectedIds.remove(recipe.getRecipeId());
+                    }
+                });
+            }
         }
+
+        // 第二部分代码的点击区域处理
+        holder.overlayClickArea.setOnClickListener(v -> {
+            if (!isEditMode) {
+                // 排除点击了收藏按钮的情况
+                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY())) {
+                    Log.d("RecipeAdapter", "点击整个菜谱区域，recipeId = " + recipe.getRecipeId());
+                    listener.onDetailClick(recipe.getRecipeId());
+                }
+            }
+        });
     }
 
-    // 新增：格式化烹饪时间的方法
+    // 第二部分代码的辅助方法
+    private boolean isPointInsideView(View containerView, View targetView, float x, float y) {
+        if (targetView.getVisibility() != View.VISIBLE) {
+            return false;
+        }
+
+        int[] location = new int[2];
+        targetView.getLocationOnScreen(location);
+
+        int left = location[0];
+        int top = location[1];
+        int right = left + targetView.getWidth();
+        int bottom = top + targetView.getHeight();
+
+        // 将屏幕坐标转换为容器视图内的相对坐标
+        int[] containerLocation = new int[2];
+        containerView.getLocationOnScreen(containerLocation);
+
+        float relativeX = x + containerLocation[0];
+        float relativeY = y + containerLocation[1];
+
+        return relativeX >= left && relativeX <= right &&
+                relativeY >= top && relativeY <= bottom;
+    }
+
+    // 第一部分代码的方法：格式化烹饪时间
     private String formatCookTime(String cookTime) {
         if (TextUtils.isEmpty(cookTime)) {
             return "暂无烹饪时间";
@@ -286,7 +346,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         return "上次烹饪：" + cookTime;
     }
 
-    // 提取原材料格式化逻辑为独立方法
+    // 第一部分代码的方法：提取原材料格式化逻辑
     private String formatNeeds(String needs) {
         String formattedNeeds = "未知原料";
         if (needs != null && !needs.isEmpty()) {
@@ -331,6 +391,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         return recipeList.size();
     }
 
+    // 合并两个ViewHolder类
     public static class RecipeViewHolder extends RecyclerView.ViewHolder {
         ImageView ivRecipeImage;
         TextView tvRecipeName;
@@ -339,6 +400,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         ImageView ivFavorite;
         ImageView ivDetail;
         CheckBox cbSelect;
+        View overlayClickArea; // 第二部分代码添加的
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -349,6 +411,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             ivFavorite = itemView.findViewById(R.id.iv_favorite);
             ivDetail = itemView.findViewById(R.id.iv_detail);
             cbSelect = itemView.findViewById(R.id.cb_select);
+            overlayClickArea = itemView.findViewById(R.id.overlay_click_area); // 第二部分代码添加的
         }
     }
 
