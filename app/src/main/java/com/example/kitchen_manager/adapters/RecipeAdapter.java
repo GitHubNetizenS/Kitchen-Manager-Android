@@ -1,36 +1,71 @@
 package com.example.kitchen_manager.adapters;
 
 import android.content.Context;
-import android.graphics.Typeface;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageSwitcher;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.response.RecipeResponse;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
 
-    private Context context;
-    private List<RecipeResponse> recipeList = new ArrayList<>();
-    private OnItemClickListener listener;
+    private final Context context;
+    private List<RecipeResponse> recipeList;
+    private final OnItemClickListener listener;
 
     public interface OnItemClickListener {
         void onFavoriteClick(int recipeId); // 只传递菜谱ID
         void onDetailClick(int recipeId);   // 只传递菜谱ID
+    }
+
+    private static class RecipeDiffCallback extends DiffUtil.Callback {
+        private final List<RecipeResponse> oldList;
+        private final List<RecipeResponse> newList;
+
+        public RecipeDiffCallback(List<RecipeResponse> oldList, List<RecipeResponse> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).getRecipeId() ==
+                    newList.get(newItemPosition).getRecipeId();
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            RecipeResponse oldRecipe = oldList.get(oldItemPosition);
+            RecipeResponse newRecipe = newList.get(newItemPosition);
+
+            // 只比较影响显示的字段，而不是所有字段
+            return Objects.equals(oldRecipe.getName(), newRecipe.getName()) &&
+                    Objects.equals(oldRecipe.getImageUrl(), newRecipe.getImageUrl()) &&
+                    oldRecipe.isFavorite() == newRecipe.isFavorite();
+        }
     }
 
     public RecipeAdapter(Context context, List<RecipeResponse> recipes, OnItemClickListener listener) {
@@ -39,9 +74,19 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         this.listener = listener;
     }
 
-    public void setRecipes(List<RecipeResponse> recipes) {
-        this.recipeList = recipes;
-        notifyDataSetChanged();
+    public void setRecipes(List<RecipeResponse> newRecipes) {
+        // 确保传入的是新的列表
+        List<RecipeResponse> newList = new ArrayList<>(newRecipes);
+
+        RecipeDiffCallback diffCallback = new RecipeDiffCallback(recipeList, newList);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
+
+        // 更新数据
+        this.recipeList.clear();
+        this.recipeList.addAll(newList);
+
+        // 必须在主线程调用
+        diffResult.dispatchUpdatesTo(this);
     }
 
     @NonNull
@@ -53,8 +98,17 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
     @Override
     public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
+        if (position < 0 || position >= recipeList.size()) {
+            return;
+        }
+
         RecipeResponse recipe = recipeList.get(position);
 
+        if(holder.itemView.getTag()!=null && (int)holder.itemView.getTag()==recipe.getRecipeId()) {
+
+            return;
+        }
+        holder.itemView.setTag(recipe.getRecipeId());
         // 设置菜谱名称
         holder.tvRecipeName.setText(recipe.getName());
 
@@ -105,12 +159,17 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
         holder.tvRecipeNeeds.setText(formattedNeeds);
 
-        // 图片加载
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
             Glide.with(context)
                     .load(recipe.getImageUrl())
                     .placeholder(R.drawable.placeholder)
                     .error(R.drawable.placeholder)
+                    // 添加以下优化配置
+                    .thumbnail(0.25f) // 先加载缩略图（原图的25%）
+                    .diskCacheStrategy(DiskCacheStrategy.ALL) // 缓存所有版本的图片
+                    .skipMemoryCache(false) // 启用内存缓存
+                    .override(300, 300) // 限制图片尺寸，根据你的布局调整
+                    .centerCrop() // 使用合适的裁剪方式
                     .into(holder.ivRecipeImage);
         } else {
             holder.ivRecipeImage.setImageResource(R.drawable.placeholder);
@@ -134,6 +193,13 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 listener.onDetailClick(recipe.getRecipeId());
             }
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull RecipeViewHolder holder) {
+        super.onViewRecycled(holder);
+        Glide.with(context).clear(holder.ivRecipeImage);
+        holder.itemView.setTag(null);
     }
 
     @Override

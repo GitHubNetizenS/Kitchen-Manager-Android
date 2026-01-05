@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.0.2.2:8080/KitchenManagerServer/";
+    String BASE_URL = "http://10.0.2.2:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -66,8 +66,8 @@ public interface ApiService {
     );
 
     // 获取菜谱列表
-    @GET("api/recipelist")
-    Call<ApiResponse<List<RecipeResponse>>> getRecipeList(
+    @GET("/api/recipelist")
+    Call<ApiResponse<Map<String, Object>>> getRecipeList(
             @Query("tag_id") int tagId,
             @Query("page") int page,
             @Query("page_size") int pageSize
@@ -99,13 +99,13 @@ public interface ApiService {
     Call<ApiResponse<List<Ingredient>>> getRecipeIngredients(@Query("recipe_id") int recipeId);
 
     // 删除用户库存中的食材
-    // 删除用户库存中的食材
     @FormUrlEncoded
     @POST("api/user/ingredients/delete")
     Call<ApiResponse<Void>> deleteUserIngredients(
             @Field("user_id") int userId,
             @Field("ingredient_ids") String ingredientIdsJson // 改为字符串类型
     );
+
     // 获取用户收藏的菜谱（新增）
     @GET("api/favorites")
     Call<ApiResponse<List<RecipeResponse>>> getFavoriteRecipes(

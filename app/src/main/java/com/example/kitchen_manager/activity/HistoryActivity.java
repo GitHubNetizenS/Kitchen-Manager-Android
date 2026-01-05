@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,7 +37,7 @@ public class HistoryActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView emptyView;
     private Button btnSortTime, btnSortMatch;
-
+    private ImageView ivBack;
     private int userId = -1; // 初始化为-1表示未登录
     private ApiService apiService;
 
@@ -50,7 +51,7 @@ public class HistoryActivity extends AppCompatActivity {
         userId = prefs.getInt("user_id", -1);
 
         apiService = ApiClient.getApiService();
-
+        ivBack = findViewById(R.id.iv_back);
         rvRecipes = findViewById(R.id.rv_recipes);
         progressBar = findViewById(R.id.progressBar);
         emptyView = findViewById(R.id.emptyView);
@@ -60,7 +61,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         // 初始化按钮状态
         updateButtonState(true);
-
+        ivBack.setOnClickListener(v -> finish());
         btnSortTime.setOnClickListener(v -> {
             updateButtonState(true);
             loadHistoryRecipes(true);
