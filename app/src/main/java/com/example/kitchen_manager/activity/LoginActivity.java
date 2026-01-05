@@ -82,11 +82,12 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setEnabled(false);
         btnLogin.setText("登录中...");
 
-        Call<ApiResponse<User>> call = apiService.login(
-                "login",
-                loginId,
-                password
-        );
+        // 添加日志
+        android.util.Log.d("LOGIN", "开始登录");
+        android.util.Log.d("LOGIN", "URL: " + ApiService.BASE_URL);
+        android.util.Log.d("LOGIN", "LoginId: " + loginId);
+
+        Call<ApiResponse<User>> call = apiService.login("login", loginId, password);
 
         call.enqueue(new Callback<ApiResponse<User>>() {
             @Override
@@ -94,17 +95,33 @@ public class LoginActivity extends AppCompatActivity {
                 btnLogin.setEnabled(true);
                 btnLogin.setText("登录");
 
+                // 详细日志
+                android.util.Log.d("LOGIN", "响应码: " + response.code());
+                android.util.Log.d("LOGIN", "响应消息: " + response.message());
+
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<User> apiResponse = response.body();
+                    android.util.Log.d("LOGIN", "API Code: " + apiResponse.getCode());
+                    android.util.Log.d("LOGIN", "API Message: " + apiResponse.getMessage());
+
                     if (apiResponse.getCode() == 200) {
                         // 登录成功，保存用户信息到SharedPreferences
+                        android.util.Log.d("LOGIN", "登录成功");
                         saveUserSession(apiResponse.getData());
 
                         navigateToMainActivity();
                     } else {
+                        android.util.Log.e("LOGIN", "登录失败: " + apiResponse.getMessage());
                         Toast.makeText(LoginActivity.this, apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 } else {
+                    // 打印错误响应体
+                    try {
+                        String errorBody = response.errorBody().string();
+                        android.util.Log.e("LOGIN", "错误响应: " + errorBody);
+                    } catch (Exception e) {
+                        android.util.Log.e("LOGIN", "无法读取错误响应");
+                    }
                     Toast.makeText(LoginActivity.this, "登录失败: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
             }
@@ -113,7 +130,9 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse<User>> call, Throwable t) {
                 btnLogin.setEnabled(true);
                 btnLogin.setText("登录");
-                Toast.makeText(LoginActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                android.util.Log.e("LOGIN", "网络错误", t);
+                android.util.Log.e("LOGIN", "错误消息: " + t.getMessage());
+                Toast.makeText(LoginActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }
