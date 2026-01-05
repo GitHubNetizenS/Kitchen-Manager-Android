@@ -5,6 +5,8 @@ import com.google.gson.annotations.SerializedName;
 public class RecipeResponse {
     @SerializedName("recipe_id")
     private int recipeId;
+    @SerializedName("history_id") // 添加历史记录ID字段
+    private int historyId;
     private String name;
     @SerializedName("image_url")
     private String imageUrl;
@@ -14,12 +16,26 @@ public class RecipeResponse {
     private String difficulty;
     private String needs;
     private boolean isFavorite; // 收藏状态字段
+    // 新增：烹饪时间字段（从历史记录中获取）
+    @SerializedName("cook_time")
+    private String cookTime;
 
     // Getter和Setter
+    public String getCookTime() {
+        return cookTime;
+    }
+    public void setCookTime(String cookTime) {
+        this.cookTime = cookTime;
+    }
+    public int getHistoryId() {
+        return historyId;
+    }
+    public void setHistoryId(int historyId) {
+        this.historyId = historyId;
+    }
     public boolean isFavorite() {
         return isFavorite;
     }
-
     public void setFavorite(boolean favorite) {
         isFavorite = favorite;
     }

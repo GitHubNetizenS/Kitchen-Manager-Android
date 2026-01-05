@@ -80,6 +80,7 @@ public class HistoryActivity extends AppCompatActivity {
         tvCancel = findViewById(R.id.tv_cancel);
         tvDelete = findViewById(R.id.tv_delete);
 
+
         // 初始化按钮状态
         updateButtonState(true);
 
@@ -125,7 +126,7 @@ public class HistoryActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        });
+        }, RecipeAdapter.PAGE_TYPE_HISTORY);
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序
@@ -163,37 +164,30 @@ public class HistoryActivity extends AppCompatActivity {
         pendingDeletes = selectedIds.size();
         progressBar.setVisibility(View.VISIBLE);
 
-        for (int recipeId : selectedIds) {
-            deleteHistoryRecipe(recipeId);
+        for (int historyId : selectedIds) {
+            deleteHistoryRecord(historyId);
         }
     }
 
-    private void deleteHistoryRecipe(int recipeId) {
-        Call<ApiResponse<Void>> call = apiService.deleteHistoryRecipe(userId, recipeId);
+    private void deleteHistoryRecord(int historyId) {
+        Call<ApiResponse<Void>> call = apiService.deleteHistoryRecord(historyId);
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                Log.d("HistoryActivity", "Delete response code: " + response.code());
+                Log.d("HistoryActivity", "删除响应码: " + response.code() + ", historyId: " + historyId);
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse<Void> apiResponse = response.body();
+                    Log.d("HistoryActivity", "删除响应: " + apiResponse.getCode() + ", " + apiResponse.getMessage());
                     if (apiResponse.getCode() == 200) {
-                        removeRecipeFromList(recipeId);
-                        adapter.removeSelectedId(recipeId);
+                        // 使用historyId从列表中移除
+                        removeRecipeFromList(historyId);
+                        adapter.removeSelectedId(historyId);
                         Toast.makeText(HistoryActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(HistoryActivity.this, "删除失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    String errorBody = "";
-                    try {
-                        if (response.errorBody() != null) {
-                            errorBody = response.errorBody().string();
-                            Log.e("HistoryActivity", "Error body: " + errorBody);
-                        }
-                    } catch (IOException e) {
-                        Log.e("HistoryActivity", "Failed to read error body", e);
-                    }
-                    Toast.makeText(HistoryActivity.this, "删除失败: 服务器错误 " + response.code() + " " + errorBody, Toast.LENGTH_SHORT).show();
+                    // 错误处理...
                 }
                 checkIfAllDeleted();
             }
@@ -204,6 +198,25 @@ public class HistoryActivity extends AppCompatActivity {
                 checkIfAllDeleted();
             }
         });
+    }
+
+    // 修改removeRecipeFromList方法，使用historyId查找
+    private void removeRecipeFromList(int historyId) {
+        List<RecipeResponse> recipes = adapter.getRecipes();
+        for (int i = 0; i < recipes.size(); i++) {
+            RecipeResponse recipe = recipes.get(i);
+            if (recipe.getHistoryId() == historyId) { // 使用historyId匹配
+                recipes.remove(i);
+                adapter.notifyItemRemoved(i);
+                Log.d("HistoryActivity", "从列表中移除历史记录ID: " + historyId);
+                break;
+            }
+        }
+
+        if (recipes.isEmpty()) {
+            emptyView.setVisibility(View.VISIBLE);
+            rvRecipes.setVisibility(View.GONE);
+        }
     }
 
     private void checkIfAllDeleted() {
@@ -219,23 +232,6 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
-    private void removeRecipeFromList(int recipeId) {
-        List<RecipeResponse> recipes = adapter.getRecipes();
-        for (int i = 0; i < recipes.size(); i++) {
-            if (recipes.get(i).getRecipeId() == recipeId) {
-                recipes.remove(i);
-                adapter.notifyItemRemoved(i);
-                Log.d("HistoryActivity", "从列表中移除菜谱ID: " + recipeId);
-                break;
-            }
-        }
-
-        // 检查是否为空
-        if (recipes.isEmpty()) {
-            emptyView.setVisibility(View.VISIBLE);
-            rvRecipes.setVisibility(View.GONE);
-        }
-    }
 
     @Override
     protected void onResume() {

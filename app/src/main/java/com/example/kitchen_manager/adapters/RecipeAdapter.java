@@ -202,7 +202,12 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         });
 
         // 详情图标点击
-        holder.ivDetail.setOnClickListener(null);
+        holder.ivDetail.setOnClickListener(v -> {
+            if (!isEditMode) {
+                Log.d("RecipeAdapter", "点击 recipeId = " + recipe.getRecipeId());
+                listener.onDetailClick(recipe.getRecipeId());
+            }
+        });
 
         // 编辑模式处理
         holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
@@ -217,40 +222,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 }
             });
         }
-
-        holder.overlayClickArea.setOnClickListener(v -> {
-            if (!isEditMode) {
-                // 排除点击了收藏按钮的情况
-                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY())) {
-                    Log.d("RecipeAdapter", "点击整个菜谱区域，recipeId = " + recipe.getRecipeId());
-                    listener.onDetailClick(recipe.getRecipeId());
-                }
-            }
-        });
-    }
-
-    private boolean isPointInsideView(View containerView, View targetView, float x, float y) {
-        if (targetView.getVisibility() != View.VISIBLE) {
-            return false;
-        }
-
-        int[] location = new int[2];
-        targetView.getLocationOnScreen(location);
-
-        int left = location[0];
-        int top = location[1];
-        int right = left + targetView.getWidth();
-        int bottom = top + targetView.getHeight();
-
-        // 将屏幕坐标转换为容器视图内的相对坐标
-        int[] containerLocation = new int[2];
-        containerView.getLocationOnScreen(containerLocation);
-
-        float relativeX = x + containerLocation[0];
-        float relativeY = y + containerLocation[1];
-
-        return relativeX >= left && relativeX <= right &&
-                relativeY >= top && relativeY <= bottom;
     }
 
     @Override
@@ -273,7 +244,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         ImageView ivFavorite;
         ImageView ivDetail;
         CheckBox cbSelect;
-        View overlayClickArea;
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -284,8 +254,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             ivFavorite = itemView.findViewById(R.id.iv_favorite);
             ivDetail = itemView.findViewById(R.id.iv_detail);
             cbSelect = itemView.findViewById(R.id.cb_select);
-            overlayClickArea = itemView.findViewById(R.id.overlay_click_area);
-
         }
     }
 

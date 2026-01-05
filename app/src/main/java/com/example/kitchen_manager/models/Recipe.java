@@ -77,7 +77,6 @@ public class Recipe {
     }
 
 
-
     // Getters and Setters
     public int getRecipe_id() { return recipe_id; }
     public void setRecipe_id(int recipe_id) { this.recipe_id = recipe_id; }
