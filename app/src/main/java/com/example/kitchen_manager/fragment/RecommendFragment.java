@@ -2,8 +2,8 @@ package com.example.kitchen_manager.fragment;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -57,8 +57,7 @@ public class RecommendFragment extends Fragment {
     private Map<Button, String> buttonTagMap = new HashMap<>();
     private Map<String, Integer> tagMap = new HashMap<>();
     private String currentTag = "全部";
-
-    private int userId = 1; // 示例ID
+    private int userId = -1;
     private ApiService apiService;
 
     private int currentPage = 1;
@@ -71,6 +70,10 @@ public class RecommendFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_recommend, container, false);
+
+        // 获取SharedPreferences
+        SharedPreferences prefs = requireContext().getSharedPreferences("user_session", Context.MODE_PRIVATE);
+        userId = prefs.getInt("user_id", -1);
 
         apiService = ApiClient.getApiService();
         initTagMap();
@@ -362,6 +365,11 @@ public class RecommendFragment extends Fragment {
     }
 
     private void favoriteRecipe(int recipeId) {
+        if (userId == -1) {
+            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Call<ApiResponse<Void>> call = apiService.favoriteRecipe(userId, recipeId);
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override

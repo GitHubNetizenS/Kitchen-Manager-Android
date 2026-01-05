@@ -57,9 +57,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe_detail);
 
-        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-        userId = prefs.getInt("user_id", 0);
-        userId=1;
+        SharedPreferences prefs = getSharedPreferences("user_session", MODE_PRIVATE);
+        userId = prefs.getInt("user_id", -1);
+
         fabCook = findViewById(R.id.fabCook);
         fabCook.setOnClickListener(v -> showDepletionDialog());
 
@@ -117,7 +117,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     private void showDepletionDialog() {
-        if (userId == 0) {
+        if (userId == -1) {
             Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -418,7 +418,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     private void addUserHistory() {
-        if (userId == 0) {
+        if (userId == -1) {
             Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
             return;
         }
