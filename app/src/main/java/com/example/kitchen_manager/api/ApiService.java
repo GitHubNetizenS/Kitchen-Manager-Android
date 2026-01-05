@@ -132,6 +132,13 @@ public interface ApiService {
             @Query("user_id") int userId
     );
 
+    // 新增: 删除历史记录
+    @POST("/api/deletehistory")
+    Call<ApiResponse<Void>> deleteHistoryRecord(@Query("history_id") Integer historyId);
+
+    @POST("/api/deletehistory")
+    Call<ApiResponse<Void>> deleteHistoryRecipe(@Query("user_id") Integer userId, @Query("recipe_id") Integer recipeId);
+
     @GET("api/history")
     Call<ApiResponse<List<RecipeResponse>>> getHistoryRecipes(
             @Query("user_id") int userId,
@@ -144,13 +151,6 @@ public interface ApiService {
             @Query("user_id") int userId
     );
 
-    // 新增: 删除历史记录
-    @FormUrlEncoded
-    @POST("api/deletehistory")
-    Call<ApiResponse<Void>> deleteHistoryRecipe(
-            @Field("user_id") int userId,
-            @Field("recipe_id") int recipeId
-    );
 
     // 获取所有标签
     @GET("api/tags")

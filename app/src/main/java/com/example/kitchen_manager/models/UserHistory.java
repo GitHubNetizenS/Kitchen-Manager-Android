@@ -1,36 +1,22 @@
 package com.example.kitchen_manager.models;
 
+import com.google.gson.annotations.SerializedName;
 import java.sql.Timestamp;
 
 public class UserHistory {
+    @SerializedName("id")
     private int id;
-    private int user_id;
-    private int recipe_id;
 
-    public Timestamp getCook_time() {
-        return cook_time;
-    }
+    @SerializedName("user_id")
+    private int userId;
 
-    public void setCook_time(Timestamp cook_time) {
-        this.cook_time = cook_time;
-    }
+    @SerializedName("recipe_id")
+    private int recipeId;
 
-    public int getRecipe_id() {
-        return recipe_id;
-    }
+    @SerializedName("cook_time")
+    private String cookTime; // 注意：这里用String而不是Timestamp，因为Gson处理起来更方便
 
-    public void setRecipe_id(int recipe_id) {
-        this.recipe_id = recipe_id;
-    }
-
-    public int getUser_id() {
-        return user_id;
-    }
-
-    public void setUser_id(int user_id) {
-        this.user_id = user_id;
-    }
-
+    // Getter和Setter
     public int getId() {
         return id;
     }
@@ -39,8 +25,27 @@ public class UserHistory {
         this.id = id;
     }
 
-    private Timestamp cook_time;
+    public int getUserId() {
+        return userId;
+    }
 
-    // Getters and Setters
-    // ...
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public int getRecipeId() {
+        return recipeId;
+    }
+
+    public void setRecipeId(int recipeId) {
+        this.recipeId = recipeId;
+    }
+
+    public String getCookTime() {
+        return cookTime;
+    }
+
+    public void setCookTime(String cookTime) {
+        this.cookTime = cookTime;
+    }
 }
