@@ -79,6 +79,13 @@ public interface ApiService {
             @Query("recipe_id") int recipeId
     );
 
+    // 点击增加菜谱热度
+    @FormUrlEncoded
+    @POST("api/recipe/popularity")
+    Call<ApiResponse<Void>> incrementPopularity(
+            @Field("recipe_id") int recipeId
+    );
+
     // 收藏菜谱
     @FormUrlEncoded
     @POST("api/favoriterecipe")

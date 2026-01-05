@@ -317,6 +317,25 @@ public class RecipeDetailActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
 
         ApiService apiService = ApiClient.getApiService();
+
+        // 先增加热度
+        Call<ApiResponse<Void>> popularityCall = apiService.incrementPopularity(recipeId);
+        popularityCall.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d("Popularity", "热度增加成功");
+                } else {
+                    Log.e("Popularity", "热度增加失败");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Log.e("Popularity", "增加热度请求失败: " + t.getMessage());
+            }
+        });
+
         Call<ApiResponse<RecipeDetailResponse>> call = apiService.getRecipeDetail(recipeId);
         call.enqueue(new Callback<ApiResponse<RecipeDetailResponse>>() {
             @Override
