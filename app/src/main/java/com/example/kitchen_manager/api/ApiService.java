@@ -66,8 +66,8 @@ public interface ApiService {
     );
 
     // 获取菜谱列表
-    @GET("api/recipelist")
-    Call<ApiResponse<List<RecipeResponse>>> getRecipeList(
+    @GET("/api/recipelist")
+    Call<ApiResponse<Map<String, Object>>> getRecipeList(
             @Query("tag_id") int tagId,
             @Query("page") int page,
             @Query("page_size") int pageSize
