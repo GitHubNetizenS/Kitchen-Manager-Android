@@ -40,7 +40,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     // 新增：页面类型常量
     public static final int PAGE_TYPE_NORMAL = 0;    // 普通页面（显示原材料）
     public static final int PAGE_TYPE_HISTORY = 1;   // 历史记录页面（显示烹饪时间）
-
+    public static final int PAGE_TYPE_FVORITE = 2;   // 收藏页面
     private int pageType = PAGE_TYPE_NORMAL;
 
     public interface OnItemClickListener {
@@ -131,11 +131,20 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         selectedIds.remove(id);
     }
 
-    public void selectAll(boolean select) {
+    public void selectAllHistory(boolean select) {
         selectedIds.clear();
         if (select) {
             for (RecipeResponse recipe : recipeList) {
                 selectedIds.add(recipe.getHistoryId());
+            }
+        }
+    }
+
+    public void selectAllFavorite(boolean select) {
+        selectedIds.clear();
+        if (select) {
+            for (RecipeResponse recipe : recipeList) {
+                selectedIds.add(recipe.getRecipeId());
             }
         }
     }
@@ -214,10 +223,21 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             holder.cbSelect.setOnCheckedChangeListener(null);
             holder.cbSelect.setChecked(selectedIds.contains(recipe.getHistoryId())); // 使用historyId
             holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    selectedIds.add(recipe.getHistoryId()); // 使用historyId
-                } else {
-                    selectedIds.remove(recipe.getHistoryId()); // 使用historyId
+                if (pageType==1)
+                {
+                    if (isChecked) {
+                        selectedIds.add(recipe.getHistoryId()); // 使用historyId
+                    } else {
+                        selectedIds.remove(recipe.getHistoryId()); // 使用historyId
+                    }
+                }
+                else if(pageType==2)
+                {
+                    if (isChecked) {
+                        selectedIds.add(recipe.getRecipeId()); // 使用recipeId
+                    } else {
+                        selectedIds.remove(recipe.getRecipeId()); // 使用recipeId
+                    }
                 }
             });
         }

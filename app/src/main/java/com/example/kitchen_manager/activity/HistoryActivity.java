@@ -101,7 +101,7 @@ public class HistoryActivity extends AppCompatActivity {
         tvEdit.setOnClickListener(v -> enterEditMode());
 
         tvSelectAll.setOnClickListener(v -> {
-            adapter.selectAll(true);
+            adapter.selectAllHistory(true);
             adapter.notifyDataSetChanged();
         });
 

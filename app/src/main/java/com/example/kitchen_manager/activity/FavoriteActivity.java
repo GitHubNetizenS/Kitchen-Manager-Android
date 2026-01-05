@@ -97,7 +97,7 @@ public class FavoriteActivity extends AppCompatActivity {
         tvEdit.setOnClickListener(v -> enterEditMode());
 
         tvSelectAll.setOnClickListener(v -> {
-            adapter.selectAll(true);
+            adapter.selectAllFavorite(true);
             adapter.notifyDataSetChanged();
         });
 
@@ -121,7 +121,7 @@ public class FavoriteActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        });
+        }, RecipeAdapter.PAGE_TYPE_FVORITE);
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序
