@@ -50,6 +50,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private List<Ingredient> recipeIngredientsList;
     private AlertDialog depletionDialog;
     private AlertDialog selectionDialog;
+    private ImageView ivBack;
     private List<CheckBox> ingredientCheckboxes = new ArrayList<>();
 
     @Override
@@ -76,7 +77,14 @@ public class RecipeDetailActivity extends AppCompatActivity {
         recipeIngredientsText = findViewById(R.id.recipe_ingredients);
         recipeSteps = findViewById(R.id.recipe_steps);
         progressBar = findViewById(R.id.progressBar);
+        ivBack = findViewById(R.id.iv_back);
 
+        ivBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish(); // 结束当前Activity，返回上一页面
+            }
+        });
         initDialogs();
         loadRecipeDetail();
     }
@@ -177,8 +185,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void showIngredientSelectionDialog() {
         Log.d("Dialog", "显示食材选择对话框");
-
-        // 关闭可能存在的旧对话框
+        //关闭可能存在的旧对话框
         if (selectionDialog != null && selectionDialog.isShowing()) {
             selectionDialog.dismiss();
         }
@@ -219,6 +226,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        ivBack.setOnClickListener(v -> finish());
 
         btnConfirm.setOnClickListener(v -> {
             Log.d("Dialog", "确认按钮被点击");

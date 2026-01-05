@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -7,7 +8,7 @@ android {
     compileSdk = 35
 
     buildFeatures {
-        viewBinding=true
+        viewBinding = true
     }
 
     defaultConfig {
@@ -29,54 +30,59 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
+    // 图片加载库 - Glide（推荐）
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation(libs.firebase.crashlytics.buildtools)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // 网络监控 (仅debug)
+    // 或者使用 Picasso（如果你要保留现有代码）
+    implementation("com.squareup.picasso:picasso:2.8")
+
+    // 网络监控（仅debug）
     debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
     releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
 
-    // 内存泄漏检测 (仅debug)
+    // 内存泄漏检测（仅debug）
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.12")
 
-    implementation("com.squareup.picasso:picasso:2.8")
-    implementation("com.github.bumptech.glide:glide:4.12.0")
-    // Retrofit 网络请求库
-    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    // 网络请求
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.code.gson:gson:2.8.9")
 
-    // Gson 用于 JSON 解析
-    implementation ("com.google.code.gson:gson:2.8.9")
     // ML Kit 图像标注
-    implementation ("com.google.mlkit:image-labeling:17.0.5")
+    implementation("com.google.mlkit:image-labeling:17.0.5")
 
-    // CameraX 核心库
-    implementation ("androidx.camera:camera-core:1.4.0")
-    implementation ("androidx.camera:camera-lifecycle:1.4.0")
-    implementation ("androidx.camera:camera-view:1.4.0")
+    // CameraX
+    implementation("androidx.camera:camera-core:1.4.0")
+    implementation("androidx.camera:camera-lifecycle:1.4.0")
+    implementation("androidx.camera:camera-view:1.4.0")
+
     // JSON处理
-    implementation ("org.json:json:20231013")
-    // 权限处理
-    implementation ("androidx.activity:activity-ktx:1.9.0")
-    implementation ("androidx.fragment:fragment-ktx:1.7.0")
+    implementation("org.json:json:20231013")
 
-    implementation("com.google.android.material:material:1.11.0")
-    // RecyclerView
-    implementation ("androidx.recyclerview:recyclerview:1.3.2")
-
+    // UI组件
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    // 网络请求（Volley）
     implementation(libs.volley)
+
+    // 测试
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
