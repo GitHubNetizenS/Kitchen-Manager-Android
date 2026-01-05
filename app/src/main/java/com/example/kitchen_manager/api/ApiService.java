@@ -144,6 +144,14 @@ public interface ApiService {
             @Query("user_id") int userId
     );
 
+    // 新增: 删除历史记录
+    @FormUrlEncoded
+    @POST("api/deletehistory")
+    Call<ApiResponse<Void>> deleteHistoryRecipe(
+            @Field("user_id") int userId,
+            @Field("recipe_id") int recipeId
+    );
+
     // 获取所有标签
     @GET("api/tags")
     Call<ApiResponse<List<TagResponse>>> getAllTags();

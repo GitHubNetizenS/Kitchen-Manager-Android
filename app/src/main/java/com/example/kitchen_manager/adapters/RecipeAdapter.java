@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -18,14 +19,18 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
 
     private final Context context;
     private List<RecipeResponse> recipeList;
     private final OnItemClickListener listener;
+    private boolean isEditMode = false;
+    private Set<Integer> selectedIds = new HashSet<>();
 
     public interface OnItemClickListener {
         void onFavoriteClick(int recipeId); // 只传递菜谱ID
@@ -90,6 +95,34 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         diffResult.dispatchUpdatesTo(this);
     }
 
+    public void setEditMode(boolean editMode) {
+        this.isEditMode = editMode;
+        if (!editMode) {
+            selectedIds.clear();
+        }
+    }
+
+    public Set<Integer> getSelectedIds() {
+        return new HashSet<>(selectedIds);
+    }
+
+    public void removeSelectedId(int id) {
+        selectedIds.remove(id);
+    }
+
+    public void selectAll(boolean select) {
+        selectedIds.clear();
+        if (select) {
+            for (RecipeResponse recipe : recipeList) {
+                selectedIds.add(recipe.getRecipeId());
+            }
+        }
+    }
+
+    public void clearSelection() {
+        selectedIds.clear();
+    }
+
     @NonNull
     @Override
     public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -99,41 +132,21 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
     @Override
     public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
-        if (position < 0 || position >= recipeList.size()) {
-            return;
-        }
-
         RecipeResponse recipe = recipeList.get(position);
 
-        if(holder.itemView.getTag()!=null && (int)holder.itemView.getTag()==recipe.getRecipeId()) {
-
-            return;
-        }
-        holder.itemView.setTag(recipe.getRecipeId());
-        // 设置菜谱名称
         holder.tvRecipeName.setText(recipe.getName());
 
-        // 设置属性：口味、方法、时间、难度
         String attributes = String.format("%s · %s · %s · %s",
-                recipe.getTaste() != null ? recipe.getTaste() : "",
-                recipe.getMethod() != null ? recipe.getMethod() : "",
-                recipe.getTime() != null ? recipe.getTime() : "",
-                recipe.getDifficulty() != null ? recipe.getDifficulty() : "");
-
+                recipe.getTaste(), recipe.getMethod(), recipe.getTime(), recipe.getDifficulty());
         holder.tvRecipeAttributes.setText(attributes);
 
-        // 设置原料（needs字段）
+        String formattedNeeds = "未知原料";
         String needs = recipe.getNeeds();
-        String formattedNeeds = "暂无原料信息";
-
         if (needs != null && !needs.isEmpty()) {
             try {
-                // 使用 Gson 解析 JSON 数组
                 Gson gson = new Gson();
                 Type listType = new TypeToken<List<String>>(){}.getType();
                 List<String> ingredients = gson.fromJson(needs, listType);
-
-                // 使用中文顿号连接原料
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < ingredients.size(); i++) {
                     sb.append(ingredients.get(i));
@@ -183,17 +196,32 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
         // 设置收藏按钮点击事件 - 简化处理
         holder.ivFavorite.setOnClickListener(v -> {
-            // 直接传递菜谱ID
-            listener.onFavoriteClick(recipe.getRecipeId());
+            if (!isEditMode) {
+                listener.onFavoriteClick(recipe.getRecipeId());
+            }
         });
 
         // 详情图标点击
         holder.ivDetail.setOnClickListener(v -> {
-            if (listener != null) {
+            if (!isEditMode) {
                 Log.d("RecipeAdapter", "点击 recipeId = " + recipe.getRecipeId());
                 listener.onDetailClick(recipe.getRecipeId());
             }
         });
+
+        // 编辑模式处理
+        holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
+        if (isEditMode) {
+            holder.cbSelect.setOnCheckedChangeListener(null);
+            holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
+            holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedIds.add(recipe.getRecipeId());
+                } else {
+                    selectedIds.remove(recipe.getRecipeId());
+                }
+            });
+        }
     }
 
     @Override
@@ -215,6 +243,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         TextView tvRecipeNeeds;
         ImageView ivFavorite;
         ImageView ivDetail;
+        CheckBox cbSelect;
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -224,6 +253,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             tvRecipeNeeds = itemView.findViewById(R.id.tv_recipe_needs);
             ivFavorite = itemView.findViewById(R.id.iv_favorite);
             ivDetail = itemView.findViewById(R.id.iv_detail);
+            cbSelect = itemView.findViewById(R.id.cb_select);
         }
     }
 

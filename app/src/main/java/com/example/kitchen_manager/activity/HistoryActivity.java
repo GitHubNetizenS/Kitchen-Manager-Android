@@ -22,10 +22,12 @@ import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -39,9 +41,13 @@ public class HistoryActivity extends AppCompatActivity {
     private TextView emptyView;
     private Button btnSortTime, btnSortMatch;
     private ImageView ivBack;
+    private TextView tvEdit, tvSelectAll, tvCancel, tvDelete;
     private int userId = -1;
     private ApiService apiService;
     private SharedPreferences prefs;
+    private boolean isEditMode = false;
+    private boolean isTimeSort = true;
+    private int pendingDeletes = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +75,10 @@ public class HistoryActivity extends AppCompatActivity {
         emptyView = findViewById(R.id.emptyView);
         btnSortTime = findViewById(R.id.btn_sort_time);
         btnSortMatch = findViewById(R.id.btn_sort_match);
+        tvEdit = findViewById(R.id.tv_edit);
+        tvSelectAll = findViewById(R.id.tv_select_all);
+        tvCancel = findViewById(R.id.tv_cancel);
+        tvDelete = findViewById(R.id.tv_delete);
 
         // 初始化按钮状态
         updateButtonState(true);
@@ -77,13 +87,26 @@ public class HistoryActivity extends AppCompatActivity {
 
         btnSortTime.setOnClickListener(v -> {
             updateButtonState(true);
+            isTimeSort = true;
             loadHistoryRecipes(true);
         });
 
         btnSortMatch.setOnClickListener(v -> {
             updateButtonState(false);
+            isTimeSort = false;
             loadHistoryRecipes(false); // false 表示按匹配值排序
         });
+
+        tvEdit.setOnClickListener(v -> enterEditMode());
+
+        tvSelectAll.setOnClickListener(v -> {
+            adapter.selectAll(true);
+            adapter.notifyDataSetChanged();
+        });
+
+        tvCancel.setOnClickListener(v -> exitEditMode());
+
+        tvDelete.setOnClickListener(v -> deleteSelectedItems());
 
         rvRecipes.setLayoutManager(new GridLayoutManager(this, 1));
 
@@ -91,14 +114,16 @@ public class HistoryActivity extends AppCompatActivity {
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
             public void onFavoriteClick(int recipeId) {
-                // 历史记录页面只能收藏，不能取消收藏
-                // 因为历史记录中的菜谱可能没有被收藏过
-                favoriteRecipe(recipeId);
+                if (!isEditMode) {
+                    favoriteRecipe(recipeId);
+                }
             }
 
             @Override
             public void onDetailClick(int recipeId) {
-                showRecipeDetail(recipeId);
+                if (!isEditMode) {
+                    showRecipeDetail(recipeId);
+                }
             }
         });
         rvRecipes.setAdapter(adapter);
@@ -107,116 +132,185 @@ public class HistoryActivity extends AppCompatActivity {
         loadHistoryRecipes(true);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // 每次活动恢复时重新获取用户ID
-        userId = prefs.getInt("user_id", -1);
-        Log.d("HistoryActivity", "onResume - 当前用户ID: " + userId);
+    private void enterEditMode() {
+        isEditMode = true;
+        tvEdit.setVisibility(View.GONE);
+        tvSelectAll.setVisibility(View.VISIBLE);
+        tvCancel.setVisibility(View.VISIBLE);
+        tvDelete.setVisibility(View.VISIBLE);
+        adapter.setEditMode(true);
+        adapter.notifyDataSetChanged();
+    }
 
-        if (userId == -1) {
-            Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
-            finish();
+    private void exitEditMode() {
+        isEditMode = false;
+        tvEdit.setVisibility(View.VISIBLE);
+        tvSelectAll.setVisibility(View.GONE);
+        tvCancel.setVisibility(View.GONE);
+        tvDelete.setVisibility(View.GONE);
+        adapter.setEditMode(false);
+        adapter.clearSelection();
+        adapter.notifyDataSetChanged();
+    }
+
+    private void deleteSelectedItems() {
+        Set<Integer> selectedIds = adapter.getSelectedIds();
+        if (selectedIds.isEmpty()) {
+            Toast.makeText(this, "请选择要删除的记录", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 检查当前排序状态
-        boolean isTimeSort = btnSortTime.getCurrentTextColor() ==
-                getResources().getColor(android.R.color.white);
-        loadHistoryRecipes(isTimeSort);
-    }
-
-    private void updateButtonState(boolean isTimeSort) {
-        int orangeLight = getResources().getColor(R.color.orange_light);
-        int lightGray = getResources().getColor(R.color.light_gray);
-        int white = getResources().getColor(android.R.color.white);
-        int black = getResources().getColor(android.R.color.black);
-
-        btnSortTime.setBackgroundColor(isTimeSort ? orangeLight : lightGray);
-        btnSortTime.setTextColor(isTimeSort ? white : black);
-
-        btnSortMatch.setBackgroundColor(!isTimeSort ? orangeLight : lightGray);
-        btnSortMatch.setTextColor(!isTimeSort ? white : black);
-    }
-
-    private void loadHistoryRecipes(boolean sortByTime) {
-        if (userId == -1) {
-            showError("用户未登录");
-            return;
-        }
-
+        pendingDeletes = selectedIds.size();
         progressBar.setVisibility(View.VISIBLE);
-        emptyView.setVisibility(View.GONE);
-        rvRecipes.setVisibility(View.GONE);
 
-        Log.d("HistoryActivity", "加载历史记录 - userId: " + userId + ", sortByTime: " + sortByTime);
+        for (int recipeId : selectedIds) {
+            deleteHistoryRecipe(recipeId);
+        }
+    }
 
-        // 获取历史记录API
-        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getHistoryRecipes(
-                userId,
-                sortByTime ? "time" : "match"
-        );
-
-        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
+    private void deleteHistoryRecipe(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.deleteHistoryRecipe(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
-            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call,
-                                   Response<ApiResponse<List<RecipeResponse>>> response) {
-                handleResponse(response);
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                Log.d("HistoryActivity", "Delete response code: " + response.code());
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200) {
+                        removeRecipeFromList(recipeId);
+                        adapter.removeSelectedId(recipeId);
+                        Toast.makeText(HistoryActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(HistoryActivity.this, "删除失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    String errorBody = "";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorBody = response.errorBody().string();
+                            Log.e("HistoryActivity", "Error body: " + errorBody);
+                        }
+                    } catch (IOException e) {
+                        Log.e("HistoryActivity", "Failed to read error body", e);
+                    }
+                    Toast.makeText(HistoryActivity.this, "删除失败: 服务器错误 " + response.code() + " " + errorBody, Toast.LENGTH_SHORT).show();
+                }
+                checkIfAllDeleted();
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
-                handleFailure(t);
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Toast.makeText(HistoryActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                checkIfAllDeleted();
             }
         });
     }
 
-    private void handleResponse(Response<ApiResponse<List<RecipeResponse>>> response) {
-        progressBar.setVisibility(View.GONE);
-
-        if (response.isSuccessful() && response.body() != null) {
-            ApiResponse<List<RecipeResponse>> apiResponse = response.body();
-            Log.d("HistoryActivity", "API响应码: " + apiResponse.getCode() + ", 消息: " + apiResponse.getMessage());
-
-            if (apiResponse.getCode() == 200) {
-                List<RecipeResponse> recipes = apiResponse.getData();
-                Log.d("HistoryActivity", "获取到历史记录数量: " + (recipes != null ? recipes.size() : 0));
-
-                if (recipes != null && !recipes.isEmpty()) {
-                    // 历史记录中的菜谱需要检查是否已收藏
-                    for (RecipeResponse recipe : recipes) {
-                        // 由于历史记录中的菜谱可能没有被收藏，这里需要从服务器获取收藏状态
-                        // 简化处理：假设历史记录中的菜谱都不是收藏状态
-                        recipe.setFavorite(false);
-                        Log.d("HistoryActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
-                    }
-                    adapter.setRecipes(recipes);
-                    rvRecipes.setVisibility(View.VISIBLE);
-                } else {
-                    emptyView.setText("暂无烹饪记录");
-                    emptyView.setVisibility(View.VISIBLE);
-                    Log.d("HistoryActivity", "历史记录列表为空");
-                }
-            } else {
-                String errorMsg = "加载失败: " + apiResponse.getMessage();
-                showError(errorMsg);
-                Log.e("HistoryActivity", errorMsg);
+    private void checkIfAllDeleted() {
+        pendingDeletes--;
+        if (pendingDeletes <= 0) {
+            progressBar.setVisibility(View.GONE);
+            exitEditMode();
+            loadHistoryRecipes(isTimeSort);
+            if (adapter.getItemCount() == 0) {
+                emptyView.setVisibility(View.VISIBLE);
+                rvRecipes.setVisibility(View.GONE);
             }
-        } else {
-            String errorMsg = "服务器响应错误: " + response.code();
-            showError(errorMsg);
-            Log.e("HistoryActivity", errorMsg);
         }
     }
 
-    private void handleFailure(Throwable t) {
-        progressBar.setVisibility(View.GONE);
-        String errorMsg = "网络错误: " + t.getMessage();
-        showError(errorMsg);
-        Log.e("HistoryActivity", errorMsg, t);
+    private void removeRecipeFromList(int recipeId) {
+        List<RecipeResponse> recipes = adapter.getRecipes();
+        for (int i = 0; i < recipes.size(); i++) {
+            if (recipes.get(i).getRecipeId() == recipeId) {
+                recipes.remove(i);
+                adapter.notifyItemRemoved(i);
+                Log.d("HistoryActivity", "从列表中移除菜谱ID: " + recipeId);
+                break;
+            }
+        }
+
+        // 检查是否为空
+        if (recipes.isEmpty()) {
+            emptyView.setVisibility(View.VISIBLE);
+            rvRecipes.setVisibility(View.GONE);
+        }
     }
 
-    // 收藏菜谱
+    @Override
+    protected void onResume() {
+        super.onResume();
+        userId = prefs.getInt("user_id", -1);
+        Log.d("HistoryActivity", "onResume - 当前用户ID: " + userId);
+
+        if (userId == -1) {
+            finish();
+            return;
+        }
+
+        // 刷新数据
+        loadHistoryRecipes(true);
+    }
+
+    private void updateButtonState(boolean isTimeSort) {
+        int selectedColor = getResources().getColor(android.R.color.white);
+        int normalColor = getResources().getColor(R.color.gray);
+
+        if (isTimeSort) {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortTime.setTextColor(selectedColor);
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortMatch.setTextColor(normalColor);
+        } else {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortTime.setTextColor(normalColor);
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortMatch.setTextColor(selectedColor);
+        }
+    }
+
+    private void loadHistoryRecipes(boolean isTimeSort) {
+        progressBar.setVisibility(View.VISIBLE);
+        emptyView.setVisibility(View.GONE);
+        rvRecipes.setVisibility(View.GONE);
+
+        String sortType = isTimeSort ? "time" : "match";
+        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getHistoryRecipes(userId, sortType);
+        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call, Response<ApiResponse<List<RecipeResponse>>> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<RecipeResponse>> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200) {
+                        List<RecipeResponse> recipes = apiResponse.getData();
+                        if (recipes != null && !recipes.isEmpty()) {
+                            for (RecipeResponse recipe : recipes) {
+                                Log.d("HistoryActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
+                            }
+                            adapter.setRecipes(recipes);
+                            rvRecipes.setVisibility(View.VISIBLE);
+                        } else {
+                            emptyView.setText("暂无烹饪记录");
+                            emptyView.setVisibility(View.VISIBLE);
+                            Log.d("HistoryActivity", "历史记录列表为空");
+                        }
+                    } else {
+                        showError("加载失败: " + apiResponse.getMessage());
+                    }
+                } else {
+                    showError("服务器响应错误");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                showError("网络错误: " + t.getMessage());
+            }
+        });
+    }
+
     private void favoriteRecipe(int recipeId) {
         if (userId == -1) {
             Toast.makeText(HistoryActivity.this, "用户未登录", Toast.LENGTH_SHORT).show();

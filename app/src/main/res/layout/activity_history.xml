@@ -9,8 +9,6 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
         <!-- 标题 -->
 
         <androidx.appcompat.widget.Toolbar
@@ -36,6 +34,45 @@
                 android:text="烹饪记录"
                 android:textSize="20sp"
                 android:textColor="#FFFFFF" />
+            <TextView
+                android:id="@+id/tv_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="编辑"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="end"
+                android:paddingEnd="16dp" />
+            <TextView
+                android:id="@+id/tv_select_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="全选"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="end"
+                android:paddingEnd="8dp"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tv_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="取消"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="end"
+                android:paddingEnd="8dp"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tv_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="删除"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="end"
+                android:paddingEnd="16dp"
+                android:visibility="gone" />
         </androidx.appcompat.widget.Toolbar>
 
         <!-- 分类标签（历史页专用） -->

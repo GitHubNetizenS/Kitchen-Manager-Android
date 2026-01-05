@@ -24,6 +24,7 @@ import com.example.kitchen_manager.response.RecipeResponse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -37,9 +38,13 @@ public class FavoriteActivity extends AppCompatActivity {
     private TextView emptyView;
     private Button btnSortTime, btnSortMatch;
     private ImageView ivBack;
+    private TextView tvEdit, tvSelectAll, tvCancel, tvDelete;
     private int userId = -1; // 不再硬编码，从SharedPreferences获取
     private ApiService apiService;
     private SharedPreferences prefs;
+    private boolean isEditMode = false;
+    private boolean isTimeSort = true;
+    private int pendingDeletes = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +72,10 @@ public class FavoriteActivity extends AppCompatActivity {
         ivBack = findViewById(R.id.iv_back);
         btnSortTime = findViewById(R.id.btn_sort_time);
         btnSortMatch = findViewById(R.id.btn_sort_match);
+        tvEdit = findViewById(R.id.tv_edit);
+        tvSelectAll = findViewById(R.id.tv_select_all);
+        tvCancel = findViewById(R.id.tv_cancel);
+        tvDelete = findViewById(R.id.tv_delete);
 
         // 初始化按钮状态
         updateButtonState(true);
@@ -75,25 +84,42 @@ public class FavoriteActivity extends AppCompatActivity {
 
         btnSortTime.setOnClickListener(v -> {
             updateButtonState(true);
+            isTimeSort = true;
             loadFavoriteRecipes(true);
         });
 
         btnSortMatch.setOnClickListener(v -> {
             updateButtonState(false);
+            isTimeSort = false;
             loadFavoriteRecipes(false); // false 表示按匹配值排序
         });
+
+        tvEdit.setOnClickListener(v -> enterEditMode());
+
+        tvSelectAll.setOnClickListener(v -> {
+            adapter.selectAll(true);
+            adapter.notifyDataSetChanged();
+        });
+
+        tvCancel.setOnClickListener(v -> exitEditMode());
+
+        tvDelete.setOnClickListener(v -> deleteSelectedItems());
 
         rvRecipes.setLayoutManager(new GridLayoutManager(this, 1));
 
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
             public void onFavoriteClick(int recipeId) {
-                unfavoriteRecipe(recipeId);
+                if (!isEditMode) {
+                    unfavoriteRecipe(recipeId);
+                }
             }
 
             @Override
             public void onDetailClick(int recipeId) {
-                showRecipeDetail(recipeId);
+                if (!isEditMode) {
+                    showRecipeDetail(recipeId);
+                }
             }
         });
         rvRecipes.setAdapter(adapter);
@@ -102,147 +128,43 @@ public class FavoriteActivity extends AppCompatActivity {
         loadFavoriteRecipes(true);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // 每次活动恢复时重新获取用户ID，防止用户切换
-        userId = prefs.getInt("user_id", -1);
-        Log.d("FavoriteActivity", "onResume - 当前用户ID: " + userId);
+    private void enterEditMode() {
+        isEditMode = true;
+        tvEdit.setVisibility(View.GONE);
+        tvSelectAll.setVisibility(View.VISIBLE);
+        tvCancel.setVisibility(View.VISIBLE);
+        tvDelete.setVisibility(View.VISIBLE);
+        adapter.setEditMode(true);
+        adapter.notifyDataSetChanged();
+    }
 
-        if (userId == -1) {
-            Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
-            finish();
+    private void exitEditMode() {
+        isEditMode = false;
+        tvEdit.setVisibility(View.VISIBLE);
+        tvSelectAll.setVisibility(View.GONE);
+        tvCancel.setVisibility(View.GONE);
+        tvDelete.setVisibility(View.GONE);
+        adapter.setEditMode(false);
+        adapter.clearSelection();
+        adapter.notifyDataSetChanged();
+    }
+
+    private void deleteSelectedItems() {
+        Set<Integer> selectedIds = adapter.getSelectedIds();
+        if (selectedIds.isEmpty()) {
+            Toast.makeText(this, "请选择要删除的收藏", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 检查当前是否有排序按钮被选中，如果有，按当前排序方式刷新
-        boolean isTimeSort = btnSortTime.getCurrentTextColor() ==
-                getResources().getColor(android.R.color.white);
-        loadFavoriteRecipes(isTimeSort);
-    }
-
-    private void updateButtonState(boolean isTimeSort) {
-        int orangeLight = getResources().getColor(R.color.orange_light);
-        int lightGray = getResources().getColor(R.color.light_gray);
-        int white = getResources().getColor(android.R.color.white);
-        int black = getResources().getColor(android.R.color.black);
-
-        btnSortTime.setBackgroundColor(isTimeSort ? orangeLight : lightGray);
-        btnSortTime.setTextColor(isTimeSort ? white : black);
-
-        btnSortMatch.setBackgroundColor(!isTimeSort ? orangeLight : lightGray);
-        btnSortMatch.setTextColor(!isTimeSort ? white : black);
-    }
-
-    private void loadFavoriteRecipes(boolean sortByTime) {
-        if (userId == -1) {
-            showError("用户未登录");
-            return;
-        }
-
+        pendingDeletes = selectedIds.size();
         progressBar.setVisibility(View.VISIBLE);
-        emptyView.setVisibility(View.GONE);
-        rvRecipes.setVisibility(View.GONE);
 
-        Log.d("FavoriteActivity", "加载收藏菜谱 - userId: " + userId + ", sortByTime: " + sortByTime);
-
-        // 获取收藏列表API（按时间或匹配值排序）
-        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getFavoriteRecipes(
-                userId,
-                sortByTime ? "time" : "match" // 使用同一个API，但参数不同
-        );
-
-        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call,
-                                   Response<ApiResponse<List<RecipeResponse>>> response) {
-                handleResponse(response);
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
-                handleFailure(t);
-            }
-        });
-    }
-
-    private void loadRecipesByMatchValue() {
-        if (userId == -1) {
-            showError("用户未登录");
-            return;
+        for (int recipeId : selectedIds) {
+            unfavoriteRecipe(recipeId);
         }
-
-        progressBar.setVisibility(View.VISIBLE);
-        emptyView.setVisibility(View.GONE);
-        rvRecipes.setVisibility(View.GONE);
-
-        // 获取匹配值排序的菜谱
-        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getRecipesByMatchValue(userId);
-
-        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call,
-                                   Response<ApiResponse<List<RecipeResponse>>> response) {
-                handleResponse(response);
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
-                handleFailure(t);
-            }
-        });
-    }
-
-    private void handleResponse(Response<ApiResponse<List<RecipeResponse>>> response) {
-        progressBar.setVisibility(View.GONE);
-
-        if (response.isSuccessful() && response.body() != null) {
-            ApiResponse<List<RecipeResponse>> apiResponse = response.body();
-            Log.d("FavoriteActivity", "API响应码: " + apiResponse.getCode() + ", 消息: " + apiResponse.getMessage());
-
-            if (apiResponse.getCode() == 200) {
-                List<RecipeResponse> recipes = apiResponse.getData();
-                Log.d("FavoriteActivity", "获取到收藏菜谱数量: " + (recipes != null ? recipes.size() : 0));
-
-                if (recipes != null && !recipes.isEmpty()) {
-                    // 标记所有菜谱为已收藏状态
-                    for (RecipeResponse recipe : recipes) {
-                        recipe.setFavorite(true);
-                        Log.d("FavoriteActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
-                    }
-                    adapter.setRecipes(recipes);
-                    rvRecipes.setVisibility(View.VISIBLE);
-                } else {
-                    emptyView.setText("暂无收藏内容");
-                    emptyView.setVisibility(View.VISIBLE);
-                    Log.d("FavoriteActivity", "收藏列表为空");
-                }
-            } else {
-                String errorMsg = "加载失败: " + apiResponse.getMessage();
-                showError(errorMsg);
-                Log.e("FavoriteActivity", errorMsg);
-            }
-        } else {
-            String errorMsg = "服务器响应错误: " + response.code();
-            showError(errorMsg);
-            Log.e("FavoriteActivity", errorMsg);
-        }
-    }
-
-    private void handleFailure(Throwable t) {
-        progressBar.setVisibility(View.GONE);
-        String errorMsg = "网络错误: " + t.getMessage();
-        showError(errorMsg);
-        Log.e("FavoriteActivity", errorMsg, t);
     }
 
     private void unfavoriteRecipe(int recipeId) {
-        if (userId == -1) {
-            Toast.makeText(FavoriteActivity.this, "用户未登录", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 取消收藏API
         Call<ApiResponse<Void>> call = apiService.unfavoriteRecipe(userId, recipeId);
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
@@ -254,20 +176,36 @@ public class FavoriteActivity extends AppCompatActivity {
 
                     if (apiResponse.getCode() == 200) {
                         removeRecipeFromList(recipeId);
+                        adapter.removeSelectedId(recipeId);
                         Toast.makeText(FavoriteActivity.this, "已取消收藏", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(FavoriteActivity.this, "操作失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    Toast.makeText(FavoriteActivity.this, "操作失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(FavoriteActivity.this, "操作失败: 服务器错误 " + response.code(), Toast.LENGTH_SHORT).show();
                 }
+                checkIfAllDeleted();
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 Toast.makeText(FavoriteActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                checkIfAllDeleted();
             }
         });
+    }
+
+    private void checkIfAllDeleted() {
+        pendingDeletes--;
+        if (pendingDeletes <= 0) {
+            progressBar.setVisibility(View.GONE);
+            exitEditMode();
+            loadFavoriteRecipes(isTimeSort);
+            if (adapter.getItemCount() == 0) {
+                emptyView.setVisibility(View.VISIBLE);
+                rvRecipes.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void removeRecipeFromList(int recipeId) {
@@ -286,6 +224,88 @@ public class FavoriteActivity extends AppCompatActivity {
             emptyView.setVisibility(View.VISIBLE);
             rvRecipes.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 每次活动恢复时重新获取用户ID，防止用户切换
+        userId = prefs.getInt("user_id", -1);
+        Log.d("FavoriteActivity", "onResume - 当前用户ID: " + userId);
+
+        if (userId == -1) {
+            Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // 刷新数据
+        loadFavoriteRecipes(true);
+    }
+
+    private void updateButtonState(boolean isTimeSort) {
+        int selectedColor = getResources().getColor(android.R.color.white);
+        int normalColor = getResources().getColor(R.color.gray);
+
+        if (isTimeSort) {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortTime.setTextColor(selectedColor);
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortMatch.setTextColor(normalColor);
+        } else {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortTime.setTextColor(normalColor);
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortMatch.setTextColor(selectedColor);
+        }
+    }
+
+    private void loadFavoriteRecipes(boolean isTimeSort) {
+        progressBar.setVisibility(View.VISIBLE);
+        emptyView.setVisibility(View.GONE);
+        rvRecipes.setVisibility(View.GONE);
+
+        String sortType = isTimeSort ? "time" : "match";
+        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getFavoriteRecipes(userId, sortType);
+        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call, Response<ApiResponse<List<RecipeResponse>>> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<RecipeResponse>> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200) {
+                        List<RecipeResponse> recipes = apiResponse.getData();
+                        if (recipes != null && !recipes.isEmpty()) {
+                            for (RecipeResponse recipe : recipes) {
+                                Log.d("FavoriteActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
+                            }
+                            adapter.setRecipes(recipes);
+                            rvRecipes.setVisibility(View.VISIBLE);
+                        } else {
+                            emptyView.setText("暂无收藏内容");
+                            emptyView.setVisibility(View.VISIBLE);
+                            Log.d("FavoriteActivity", "收藏列表为空");
+                        }
+                    } else {
+                        String errorMsg = "加载失败: " + apiResponse.getMessage();
+                        showError(errorMsg);
+                        Log.e("FavoriteActivity", errorMsg);
+                    }
+                } else {
+                    String errorMsg = "服务器响应错误: " + response.code();
+                    showError(errorMsg);
+                    Log.e("FavoriteActivity", errorMsg);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                String errorMsg = "网络错误: " + t.getMessage();
+                showError(errorMsg);
+                Log.e("FavoriteActivity", errorMsg, t);
+            }
+        });
     }
 
     private void showRecipeDetail(int recipeId) {

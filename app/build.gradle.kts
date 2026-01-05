@@ -36,6 +36,17 @@ android {
 }
 
 dependencies {
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.firebase.crashlytics.buildtools)
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // 网络监控 (仅debug)
+    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
+
+    // 内存泄漏检测 (仅debug)
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.12")
+
     implementation("com.squareup.picasso:picasso:2.8")
     implementation("com.github.bumptech.glide:glide:4.12.0")
     // Retrofit 网络请求库
