@@ -100,7 +100,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_marginTop="8dp"
-                    android:contentDescription="详情"
+                    android:contentDescription="想做"
                     android:src="@drawable/ic_info" />
 
             </LinearLayout>

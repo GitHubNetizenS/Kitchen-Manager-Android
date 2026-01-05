@@ -114,9 +114,13 @@ public class HistoryActivity extends AppCompatActivity {
         // 创建适配器 - 注意：历史记录页面不提供取消收藏功能，只提供收藏功能
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
-            public void onFavoriteClick(int recipeId) {
+            public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
                 if (!isEditMode) {
-                    favoriteRecipe(recipeId);
+                    // 如果当前已收藏，点击应该取消收藏；如果未收藏，点击应该收藏
+                    // 但在历史页面，我们默认只做收藏操作
+                    if (!isCurrentlyFavorite) {
+                        favoriteRecipe(recipeId);
+                    }
                 }
             }
 
@@ -126,7 +130,7 @@ public class HistoryActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        }, RecipeAdapter.PAGE_TYPE_HISTORY);
+        });
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序

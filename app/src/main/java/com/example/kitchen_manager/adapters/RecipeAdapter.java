@@ -33,7 +33,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     private Set<Integer> selectedIds = new HashSet<>();
 
     public interface OnItemClickListener {
-        void onFavoriteClick(int recipeId); // 只传递菜谱ID
+        void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite); // 只传递菜谱ID
         void onDetailClick(int recipeId);   // 只传递菜谱ID
     }
 
@@ -190,14 +190,24 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         }
 
         // 更新收藏图标状态
-        int favoriteIcon = recipe.isFavorite() ?
+        boolean isFavorite = recipe.isFavorite();
+        int favoriteIcon = isFavorite ?
                 R.drawable.ic_favorite : R.drawable.ic_favorite_border;
         holder.ivFavorite.setImageResource(favoriteIcon);
 
-        // 设置收藏按钮点击事件 - 简化处理
+        // 设置收藏按钮点击事件 - 修改：传递当前收藏状态
         holder.ivFavorite.setOnClickListener(v -> {
             if (!isEditMode) {
-                listener.onFavoriteClick(recipe.getRecipeId());
+                // 点击时传递当前收藏状态，让外部处理反转逻辑
+                listener.onFavoriteClick(recipe.getRecipeId(), isFavorite);
+            }
+        });
+
+        // 详情图标点击 - 添加空点击监听器避免与覆盖层冲突
+        holder.ivDetail.setOnClickListener(v -> {
+            if (!isEditMode) {
+                Log.d("RecipeAdapter", "点击详情图标，recipeId = " + recipe.getRecipeId());
+                listener.onDetailClick(recipe.getRecipeId());
             }
         });
 
@@ -220,8 +230,9 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
         holder.overlayClickArea.setOnClickListener(v -> {
             if (!isEditMode) {
-                // 排除点击了收藏按钮的情况
-                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY())) {
+                // 排除点击了收藏按钮或详情图标的情况
+                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY()) &&
+                        !isPointInsideView(v, holder.ivDetail, v.getX(), v.getY())) {
                     Log.d("RecipeAdapter", "点击整个菜谱区域，recipeId = " + recipe.getRecipeId());
                     listener.onDetailClick(recipe.getRecipeId());
                 }
