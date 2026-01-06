@@ -8,6 +8,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Ingredient implements Parcelable {
+    public Ingredient(String name, String category, String storageDate, String expiryDate, int icLogoOrange, String nutrition, String benefit, String imageUrl) {
+    }
+
     public int getIngredientId() {
         return ingredientId;
     }
@@ -25,17 +28,20 @@ public class Ingredient implements Parcelable {
     private String nutrition;
     private String benefit;
     private String imageUrl; // 新增图片URL字段
+    private int expiryDays; // 新增：保质期天数字段
 
+    // 修改构造器，添加expiryDays参数
     public Ingredient(String name, String category, String storageDate, String expiryDate,
-                      int imageResId, String nutrition, String benefit, String imageUrl) {
+                      int expiryDays, int imageResId, String nutrition, String benefit, String imageUrl) {
         this.name = name;
         this.category = category;
         this.storageDate = storageDate;
         this.expiryDate = expiryDate;
+        this.expiryDays = expiryDays; // 新增
         this.imageResId = imageResId;
         this.nutrition = nutrition;
         this.benefit = benefit;
-        this.imageUrl = imageUrl; // 新增
+        this.imageUrl = imageUrl;
     }
 
     protected Ingredient(Parcel in) {
@@ -43,6 +49,7 @@ public class Ingredient implements Parcelable {
         category = in.readString();
         storageDate = in.readString();
         expiryDate = in.readString();
+        expiryDays = in.readInt(); // 新增
         imageResId = in.readInt();
         nutrition = in.readString();
         benefit = in.readString();
@@ -95,6 +102,10 @@ public class Ingredient implements Parcelable {
         return imageUrl;
     }
 
+    public int getExpiryDays() { // 新增：获取保质期天数
+        return expiryDays;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -106,6 +117,7 @@ public class Ingredient implements Parcelable {
         dest.writeString(category);
         dest.writeString(storageDate);
         dest.writeString(expiryDate);
+        dest.writeInt(expiryDays); // 新增
         dest.writeInt(imageResId);
         dest.writeString(nutrition);
         dest.writeString(benefit);
@@ -165,5 +177,8 @@ public class Ingredient implements Parcelable {
 
     public void setNutrition(String nutrition) {
         this.nutrition = nutrition;
+    }
+    public void setExpiryDays(int expiryDays) { // 新增：设置保质期天数
+        this.expiryDays = expiryDays;
     }
 }

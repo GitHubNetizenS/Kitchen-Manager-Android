@@ -4,31 +4,28 @@ public class IngredientResponse {
     private String name;
     private String storageDate;
     private String expiryDate;
+    private Integer expiryDays; // 新增：保质期天数
     private String nutrition;
     private String benefit;
-    private String imageUrl; // 新增图片URL字段
-    private String category; // 新增分类字段
+    private String imageUrl;
+    private String category;
 
-    // 构造器和getter/setter
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-    public IngredientResponse() {
-        // 空构造器
-    }
-
+    // 修改构造器，添加expiryDays参数
     public IngredientResponse(String name, String storageDate, String expiryDate,
-                              String nutrition, String benefit, String imageUrl) {
+                              Integer expiryDays, String nutrition, String benefit,
+                              String imageUrl, String category) {
         this.name = name;
         this.storageDate = storageDate;
         this.expiryDate = expiryDate;
+        this.expiryDays = expiryDays; // 新增
         this.nutrition = nutrition;
         this.benefit = benefit;
-        this.imageUrl = imageUrl; // 新增
+        this.imageUrl = imageUrl;
+        this.category = category;
+    }
+
+    // 空构造器
+    public IngredientResponse() {
     }
 
     // Getters and Setters
@@ -56,6 +53,14 @@ public class IngredientResponse {
         this.expiryDate = expiryDate;
     }
 
+    public Integer getExpiryDays() { // 新增
+        return expiryDays;
+    }
+
+    public void setExpiryDays(Integer expiryDays) { // 新增
+        this.expiryDays = expiryDays;
+    }
+
     public String getNutrition() {
         return nutrition;
     }
@@ -78,5 +83,13 @@ public class IngredientResponse {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

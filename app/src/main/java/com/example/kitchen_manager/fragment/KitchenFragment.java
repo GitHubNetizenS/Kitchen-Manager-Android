@@ -157,21 +157,23 @@ public class KitchenFragment extends Fragment implements IngredientAdapter.OnIte
 
                     allIngredients.clear();
 
-                    //7.4 4pm更新for
-                    // 在loadUserIngredients方法中
+                    // 修改for循环，添加expiryDays参数
                     for (IngredientResponse item : serverIngredients) {
+                        // 使用服务器返回的保质期天数，如果为空则使用默认值3
+                        int expiryDays = item.getExpiryDays() != null ? item.getExpiryDays() : 3;
+
                         allIngredients.add(new Ingredient(
                                 item.getName(),
                                 item.getCategory(),
                                 item.getStorageDate(),
                                 item.getExpiryDate(),
-                                R.drawable.ic_logo_orange,
+                                expiryDays, // 保质期天数
+                                R.drawable.ic_logo_orange, // 图片资源ID
                                 item.getNutrition(),
                                 item.getBenefit(),
                                 item.getImageUrl()
                         ));
                     }
-
 
                     // 更新UI
                     if (tabLayout.getTabCount() > 0) {

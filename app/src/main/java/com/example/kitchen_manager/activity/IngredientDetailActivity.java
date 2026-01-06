@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -42,7 +42,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
     private ImageView ivBack, ivIngredient;
     private TextView tvName, tvExpiryDate, tvRemainingDays, tvNutrition, tvBenefit;
     private Spinner spCategory;
-    private EditText etStorageDate;
+    private EditText etStorageDate, etExpiryDays; // 新增保质期编辑框
     private Button btnEdit, btnDelete;
     private Ingredient ingredient;
 
@@ -101,6 +101,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
         tvName = findViewById(R.id.tv_detail_name);
         spCategory = findViewById(R.id.sp_category);
         etStorageDate = findViewById(R.id.et_storage_date);
+        etExpiryDays = findViewById(R.id.et_expiry_days); // 新增
         tvExpiryDate = findViewById(R.id.tv_detail_expiry_date);
         tvRemainingDays = findViewById(R.id.tv_detail_remaining_days);
         btnEdit = findViewById(R.id.btn_edit);
@@ -108,12 +109,6 @@ public class IngredientDetailActivity extends AppCompatActivity {
         tvNutrition = findViewById(R.id.tv_nutrition);
         tvBenefit = findViewById(R.id.tv_benefit);
 
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // 结束当前Activity，返回上一页面
-            }
-        });
         // 设置分类下拉菜单
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, CATEGORIES);
@@ -146,16 +141,18 @@ public class IngredientDetailActivity extends AppCompatActivity {
         // 启用编辑控件
         spCategory.setEnabled(true);
         etStorageDate.setEnabled(true);
+        etExpiryDays.setEnabled(true); // 新增：启用保质期编辑
 
         // 更改按钮文本
         btnEdit.setText("完成");
-
     }
+
 
     private void saveChanges() {
         // 获取修改后的值
         String newCategory = spCategory.getSelectedItem().toString();
         String newStorageDate = etStorageDate.getText().toString();
+        String expiryDaysStr = etExpiryDays.getText().toString();
 
         // 验证日期格式
         if (!isValidDate(newStorageDate)) {
@@ -163,17 +160,39 @@ public class IngredientDetailActivity extends AppCompatActivity {
             return;
         }
 
+        // 验证保质期
+        if (expiryDaysStr.isEmpty()) {
+            Toast.makeText(this, "请输入保质期天数", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int newExpiryDays;
+        try {
+            newExpiryDays = Integer.parseInt(expiryDaysStr);
+            if (newExpiryDays <= 0) {
+                Toast.makeText(this, "保质期天数必须大于0", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "保质期必须是数字", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // 计算新的食用期限
-        String newExpiryDate = calculateExpiryDate(newStorageDate);
+        String newExpiryDate = calculateExpiryDate(newStorageDate, newExpiryDays);
 
         // 更新本地对象
         ingredient.setCategory(newCategory);
         ingredient.setStorageDate(newStorageDate);
         ingredient.setExpiryDate(newExpiryDate);
 
+        // 可能需要添加保质期天数到Ingredient模型中
+        //ingredient.setExpiryDays(newExpiryDays);
+
         // 调用API更新服务器
-        updateIngredientOnServer();
+        updateIngredientOnServer(newExpiryDays);
     }
+
 
     private boolean isValidDate(String dateStr) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -186,7 +205,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
         }
     }
 
-    private String calculateExpiryDate(String storageDate) {
+    private String calculateExpiryDate(String storageDate, int newExpiryDays) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             Date date = sdf.parse(storageDate);
@@ -203,41 +222,61 @@ public class IngredientDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void updateIngredientOnServer() {
+    private void updateIngredientOnServer(int expiryDays) {
         int userId = getCurrentUserId();
         if (userId == -1) {
             Toast.makeText(this, "用户未登录", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // 添加日志
+        Log.d("IngredientDetail", "发送更新请求 - userId: " + userId +
+                ", name: " + ingredient.getName() +
+                ", category: " + ingredient.getCategory() +
+                ", storageDate: " + ingredient.getStorageDate() +
+                ", expiryDays: " + expiryDays);
+
         ApiService apiService = ApiClient.getApiService();
         Call<ApiResponse<Void>> call = apiService.updateIngredient(
                 userId,
                 ingredient.getName(),
                 ingredient.getCategory(),
-                ingredient.getStorageDate()
+                ingredient.getStorageDate(),
+                expiryDays
         );
 
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
-                    // 更新成功
-                    Toast.makeText(IngredientDetailActivity.this, "更新成功", Toast.LENGTH_SHORT).show();
+                Log.d("IngredientDetail", "收到响应 - 状态码: " + response.code());
 
-                    // 返回结果
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("updated", true);
-                    setResult(RESULT_OK, resultIntent);
-                    finish();
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d("IngredientDetail", "响应体: " + response.body().toString());
+
+                    if (response.body().getCode() == 200) {
+                        Toast.makeText(IngredientDetailActivity.this, "更新成功", Toast.LENGTH_SHORT).show();
+
+                        // 更新食用期限显示
+                        updateUI();
+
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("updated", true);
+                        setResult(RESULT_OK, resultIntent);
+                        finish();
+                    } else {
+                        Toast.makeText(IngredientDetailActivity.this, "更新失败: " + response.body().getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e("IngredientDetail", "更新失败: " + response.body().getMessage());
+                    }
                 } else {
-                    Toast.makeText(IngredientDetailActivity.this, "更新失败", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(IngredientDetailActivity.this, "更新失败: 响应异常", Toast.LENGTH_SHORT).show();
+                    Log.e("IngredientDetail", "响应异常: " + response.message());
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 Toast.makeText(IngredientDetailActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("IngredientDetail", "网络错误: ", t);
             }
         });
     }
@@ -296,8 +335,11 @@ public class IngredientDetailActivity extends AppCompatActivity {
                     String selectedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth);
                     etStorageDate.setText(selectedDate);
 
+                    // 获取保质期天数
+                    int expiryDays = getExpiryDaysFromInput();
+
                     // 自动更新食用期限
-                    String expiryDate = calculateExpiryDate(selectedDate);
+                    String expiryDate = calculateExpiryDate(selectedDate, expiryDays);
                     tvExpiryDate.setText(expiryDate);
 
                     // 更新剩余天数显示
@@ -310,6 +352,17 @@ public class IngredientDetailActivity extends AppCompatActivity {
 
         datePickerDialog.show();
     }
+
+    private int getExpiryDaysFromInput() {
+        try {
+            String expiryDaysStr = etExpiryDays.getText().toString();
+            return Integer.parseInt(expiryDaysStr);
+        } catch (NumberFormatException e) {
+            // 如果输入无效，使用模型中的保质期天数
+            return ingredient.getExpiryDays();
+        }
+    }
+
 
     private void updateUI() {
         if (ingredient != null) {
@@ -332,6 +385,9 @@ public class IngredientDetailActivity extends AppCompatActivity {
 
             etStorageDate.setText(ingredient.getStorageDate());
             tvExpiryDate.setText(ingredient.getExpiryDate());
+
+            // 设置保质期天数
+            etExpiryDays.setText(String.valueOf(ingredient.getExpiryDays()));
 
             // 设置营养和健康益处
             String formattedNutrition = formatNutrition(ingredient.getNutrition());

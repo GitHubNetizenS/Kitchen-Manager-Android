@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.0.2.2:8080/";
+    String BASE_URL = "http://10.68.132.193:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -197,8 +197,8 @@ public interface ApiService {
             @Field("user_id") int userId,
             @Field("ingredient_name") String ingredientName,
             @Field("category") String category,
-            @Field("storage_date") String storageDate
-    );
+            @Field("storage_date") String storageDate,
+            @Field("custom_expiry_days") int customExpiryDays);
 
 
 }
