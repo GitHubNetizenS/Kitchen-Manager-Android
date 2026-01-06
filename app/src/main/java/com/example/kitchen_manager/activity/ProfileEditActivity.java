@@ -1,6 +1,7 @@
 package com.example.kitchen_manager.activity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -42,6 +43,7 @@ public class ProfileEditActivity extends AppCompatActivity {
     private TextView tvUserId;
     private ImageView ivAvatar;
     private Button btnSave;
+    private Button btnLogout;
     private SharedPreferences prefs;
     private int userId;
     private String avatarUrl;
@@ -77,6 +79,7 @@ public class ProfileEditActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
         ivAvatar = findViewById(R.id.iv_avatar);
         btnSave = findViewById(R.id.btn_save);
+        btnLogout = findViewById(R.id.btn_logout);
 
         // 从SharedPreferences获取用户ID
         userId = prefs.getInt("user_id", -1);
@@ -89,14 +92,42 @@ public class ProfileEditActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnSave.setOnClickListener(v -> saveChanges());
-
+        // 退出登录按钮点击事件
+        btnLogout.setOnClickListener(v -> logout());
         // 头像点击事件
         ivAvatar.setOnClickListener(v -> openImageChooser());
-
         // 更换头像文字点击事件
         findViewById(R.id.tv_change_avatar).setOnClickListener(v -> openImageChooser());
     }
+    private void logout() {
+        // 创建确认对话框
+        new AlertDialog.Builder(this)
+                .setTitle("退出登录")
+                .setMessage("确定要退出登录吗？")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    performLogout();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
 
+    private void performLogout() {
+        // 清除用户会话
+        clearUserSession();
+
+        // 显示退出成功提示
+        Toast.makeText(this, "已退出登录", Toast.LENGTH_SHORT).show();
+
+        // 跳转到登录页面，并清除所有activity
+        Intent intent = new Intent(ProfileEditActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+
+        // 关闭当前页面
+        finish();
+    }
+
+    // 这个 clearUserSession() 方法你已经有了，不需要重复添加
     private void openImageChooser() {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");

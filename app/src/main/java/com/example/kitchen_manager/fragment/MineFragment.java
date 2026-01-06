@@ -469,15 +469,14 @@ public class MineFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // 每次显示时重新获取用户ID，因为可能用户已经登录或退出
         userId = prefs.getInt("user_id", -1);
-        Log.d("MineFragment", "onResume - 当前用户ID: " + userId);
-
-        // 每次显示时刷新所有数据
-        updateUserInfoDisplay();
-        fetchUserProfile();
-        fetchFavoriteCount();
-        fetchHistoryCount();
+        if (userId != -1) {
+            fetchUserProfile();  // 只fetch，不重复updateUserInfoDisplay()如果数据未变
+            fetchFavoriteCount();
+            fetchHistoryCount();
+        } else {
+            updateUserInfoDisplay();
+        }
     }
 
     private void updateUI(User user) {

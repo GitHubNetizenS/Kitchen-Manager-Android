@@ -10,16 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="12dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
             android:gravity="center"
             android:text="编辑个人信息"
             android:textColor="#333333"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <androidx.cardview.widget.CardView
@@ -40,8 +40,8 @@
 
                 <ImageView
                     android:id="@+id/iv_avatar"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
                     android:contentDescription="用户头像"
                     android:src="@drawable/ic_logo_orange"
                     android:scaleType="centerCrop"/>
@@ -60,9 +60,9 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:elevation="2dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="10dp"
             app:cardBackgroundColor="#FFFFFF">
 
             <LinearLayout
@@ -198,12 +198,29 @@
             android:id="@+id/btn_save"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="24dp"
             android:background="@drawable/round_corner"
-            android:padding="16dp"
+            android:padding="12dp"
             android:text="保存修改"
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             android:textStyle="bold" />
+        <Button
+            android:id="@+id/btn_logout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/round_corner"
+            android:padding="12dp"
+            android:text="退出登录"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+        <!-- 添加一个分隔线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#F0F0F0" />
     </LinearLayout>
 </ScrollView>
