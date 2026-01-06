@@ -44,7 +44,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     private int pageType = PAGE_TYPE_NORMAL;
 
     public interface OnItemClickListener {
-        void onFavoriteClick(int recipeId); // 只传递菜谱ID
+        void onFavoriteClick(int recipeId,boolean isCurrentlyFavorite); // 只传递菜谱ID
         void onDetailClick(int recipeId);   // 只传递菜谱ID
     }
 
@@ -210,24 +210,21 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         }
 
         // 更新收藏图标状态
-        int favoriteIcon = recipe.isFavorite() ?
+        boolean isFavorite = recipe.isFavorite();
+        int favoriteIcon = isFavorite ?
                 R.drawable.ic_favorite : R.drawable.ic_favorite_border;
         holder.ivFavorite.setImageResource(favoriteIcon);
 
-        // 设置收藏按钮点击事件（第一部分代码的逻辑）
+// 设置收藏按钮点击事件 - 修改：传递当前收藏状态
         holder.ivFavorite.setOnClickListener(v -> {
             if (!isEditMode) {
-                listener.onFavoriteClick(recipe.getRecipeId());
+                // 点击时传递当前收藏状态，让外部处理反转逻辑
+                listener.onFavoriteClick(recipe.getRecipeId(), isFavorite);
             }
         });
 
         // 详情图标点击（第一部分代码的逻辑，保留Log）
-        holder.ivDetail.setOnClickListener(v -> {
-            if (!isEditMode) {
-                Log.d("RecipeAdapter", "点击 recipeId = " + recipe.getRecipeId());
-                listener.onDetailClick(recipe.getRecipeId());
-            }
-        });
+        holder.ivDetail.setOnClickListener(null);
 
         // 编辑模式处理（合并两部分的逻辑）
         holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
@@ -266,11 +263,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             }
         }
 
-        // 第二部分代码的点击区域处理
         holder.overlayClickArea.setOnClickListener(v -> {
             if (!isEditMode) {
-                // 排除点击了收藏按钮的情况
-                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY())) {
+                // 排除点击了收藏按钮或详情图标的情况
+                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY()) &&
+                        !isPointInsideView(v, holder.ivDetail, v.getX(), v.getY())) {
                     Log.d("RecipeAdapter", "点击整个菜谱区域，recipeId = " + recipe.getRecipeId());
                     listener.onDetailClick(recipe.getRecipeId());
                 }
@@ -278,7 +275,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         });
     }
 
-    // 第二部分代码的辅助方法
+
     private boolean isPointInsideView(View containerView, View targetView, float x, float y) {
         if (targetView.getVisibility() != View.VISIBLE) {
             return false;
@@ -303,7 +300,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                 relativeY >= top && relativeY <= bottom;
     }
 
-    // 第一部分代码的方法：格式化烹饪时间
     private String formatCookTime(String cookTime) {
         if (TextUtils.isEmpty(cookTime)) {
             return "暂无烹饪时间";
@@ -316,7 +312,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             return "上次烹饪：" + cookTime.substring(0, 16);
         }
 
-        // 方法2：如果是其他格式，尝试解析
         try {
             // 尝试常见的日期格式
             String[] formats = {
@@ -346,7 +341,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         return "上次烹饪：" + cookTime;
     }
 
-    // 第一部分代码的方法：提取原材料格式化逻辑
+    //提取原材料格式化逻辑
     private String formatNeeds(String needs) {
         String formattedNeeds = "未知原料";
         if (needs != null && !needs.isEmpty()) {
