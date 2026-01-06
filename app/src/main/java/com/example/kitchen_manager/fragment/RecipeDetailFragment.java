@@ -72,7 +72,7 @@ public class RecipeDetailFragment extends Fragment {
     // 获取当前登录用户ID（需要根据你的用户系统实现）
     private int getCurrentUserId() {
         // 示例：从SharedPreferences获取用户ID
-        SharedPreferences prefs = requireActivity().getSharedPreferences("user_session", Context.MODE_PRIVATE);
+        SharedPreferences prefs = requireActivity().getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
         return prefs.getInt("user_id", -1); // -1表示未登录
     }
 
