@@ -65,14 +65,6 @@ public interface ApiService {
             @Field("ingredients") String ingredientsJson
     );
 
-    // 获取菜谱列表
-    @GET("/api/recipelist")
-    Call<ApiResponse<Map<String, Object>>> getRecipeList(
-            @Query("tag_id") int tagId,
-            @Query("page") int page,
-            @Query("page_size") int pageSize
-    );
-
     // 获取菜谱详情
     @GET("api/recipedetail")
     Call<ApiResponse<RecipeDetailResponse>> getRecipeDetail(
@@ -200,5 +192,11 @@ public interface ApiService {
             @Field("storage_date") String storageDate,
             @Field("custom_expiry_days") int customExpiryDays);
 
-
+    @GET("api/recipelist")
+    Call<ApiResponse<Map<String, Object>>> getRecipeList(
+            @Query("tag_id") int tagId,
+            @Query("page") int page,
+            @Query("page_size") int pageSize,
+            @Query("user_id") int userId
+    );
 }

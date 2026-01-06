@@ -111,7 +111,8 @@ public class FavoriteActivity extends AppCompatActivity {
             @Override
             public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
                 if (!isEditMode) {
-                    // 在收藏页面，点击收藏图标就是取消收藏
+                    // 在收藏页面，菜谱肯定是已收藏状态
+                    // 点击收藏图标就是取消收藏
                     unfavoriteRecipe(recipeId);
                 }
             }
@@ -122,7 +123,7 @@ public class FavoriteActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        }, RecipeAdapter.PAGE_TYPE_FAVORITE);
+        });
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序

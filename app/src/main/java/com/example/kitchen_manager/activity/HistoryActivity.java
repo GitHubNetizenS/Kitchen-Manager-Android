@@ -111,14 +111,16 @@ public class HistoryActivity extends AppCompatActivity {
 
         rvRecipes.setLayoutManager(new GridLayoutManager(this, 1));
 
-        // 创建适配器 - 注意：历史记录页面不提供取消收藏功能，只提供收藏功能
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
             public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
                 if (!isEditMode) {
-                    // 如果当前已收藏，点击应该取消收藏；如果未收藏，点击应该收藏
-                    // 但在历史页面，我们默认只做收藏操作
-                    if (!isCurrentlyFavorite) {
+                    // 根据当前状态决定操作
+                    if (isCurrentlyFavorite) {
+                        // 如果已收藏，则取消收藏
+                        unfavoriteRecipe(recipeId);
+                    } else {
+                        // 如果未收藏，则收藏
                         favoriteRecipe(recipeId);
                     }
                 }
@@ -130,11 +132,39 @@ public class HistoryActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        }, RecipeAdapter.PAGE_TYPE_HISTORY);
+        });
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序
         loadHistoryRecipes(true);
+    }
+
+    private void unfavoriteRecipe(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.unfavoriteRecipe(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call,
+                                   Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+
+                    if (apiResponse.getCode() == 200) {
+                        // 更新本地状态
+                        updateLocalFavoriteStatus(recipeId, false);
+                        Toast.makeText(HistoryActivity.this, "已取消收藏", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(HistoryActivity.this, "取消收藏失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(HistoryActivity.this, "取消收藏失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Toast.makeText(HistoryActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void enterEditMode() {

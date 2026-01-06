@@ -209,13 +209,18 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             holder.ivRecipeImage.setImageResource(R.drawable.placeholder);
         }
 
-        // 更新收藏图标状态
+        // 正确显示收藏图标状态
         boolean isFavorite = recipe.isFavorite();
-        int favoriteIcon = isFavorite ?
-                R.drawable.ic_favorite : R.drawable.ic_favorite_border;
-        holder.ivFavorite.setImageResource(favoriteIcon);
+        Log.d("RecipeAdapter", "绑定菜谱ID: " + recipe.getRecipeId() + ", 收藏状态: " + isFavorite);
 
-// 设置收藏按钮点击事件 - 修改：传递当前收藏状态
+        // 根据收藏状态设置图标
+        if (isFavorite) {
+            holder.ivFavorite.setImageResource(R.drawable.ic_favorite); // 实心收藏图标
+        } else {
+            holder.ivFavorite.setImageResource(R.drawable.ic_favorite_border); // 空心收藏图标
+        }
+
+        // 设置收藏按钮点击事件
         holder.ivFavorite.setOnClickListener(v -> {
             if (!isEditMode) {
                 // 点击时传递当前收藏状态，让外部处理反转逻辑
@@ -223,10 +228,10 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             }
         });
 
-        // 详情图标点击（第一部分代码的逻辑，保留Log）
+        // 详情图标点击
         holder.ivDetail.setOnClickListener(null);
 
-        // 编辑模式处理（合并两部分的逻辑）
+        // 编辑模式处理
         holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
         if (isEditMode) {
             holder.cbSelect.setOnCheckedChangeListener(null);
@@ -251,7 +256,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                     }
                 });
             } else {
-                // 第二部分代码的选择逻辑
+                // 普通页面的选择逻辑
                 holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
                 holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     if (isChecked) {
@@ -274,7 +279,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             }
         });
     }
-
 
     private boolean isPointInsideView(View containerView, View targetView, float x, float y) {
         if (targetView.getVisibility() != View.VISIBLE) {
@@ -386,7 +390,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         return recipeList.size();
     }
 
-    // 合并两个ViewHolder类
+    // ViewHolder类
     public static class RecipeViewHolder extends RecyclerView.ViewHolder {
         ImageView ivRecipeImage;
         TextView tvRecipeName;
@@ -395,7 +399,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         ImageView ivFavorite;
         ImageView ivDetail;
         CheckBox cbSelect;
-        View overlayClickArea; // 第二部分代码添加的
+        View overlayClickArea;
 
         public RecipeViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -406,7 +410,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             ivFavorite = itemView.findViewById(R.id.iv_favorite);
             ivDetail = itemView.findViewById(R.id.iv_detail);
             cbSelect = itemView.findViewById(R.id.cb_select);
-            overlayClickArea = itemView.findViewById(R.id.overlay_click_area); // 第二部分代码添加的
+            overlayClickArea = itemView.findViewById(R.id.overlay_click_area);
         }
     }
 
