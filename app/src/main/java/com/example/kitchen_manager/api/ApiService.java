@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.132.193:8080/";
+    String BASE_URL = "http://10.68.130.173:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -63,14 +63,6 @@ public interface ApiService {
     Call<ApiResponse<Void>> addIngredients(
             @Field("user_id") int userId,
             @Field("ingredients") String ingredientsJson
-    );
-
-    // 获取菜谱列表
-    @GET("/api/recipelist")
-    Call<ApiResponse<Map<String, Object>>> getRecipeList(
-            @Query("tag_id") int tagId,
-            @Query("page") int page,
-            @Query("page_size") int pageSize
     );
 
     // 获取菜谱详情
@@ -200,5 +192,11 @@ public interface ApiService {
             @Field("storage_date") String storageDate,
             @Field("custom_expiry_days") int customExpiryDays);
 
-
+    @GET("api/recipelist")
+    Call<ApiResponse<Map<String, Object>>> getRecipeList(
+            @Query("tag_id") int tagId,
+            @Query("page") int page,
+            @Query("page_size") int pageSize,
+            @Query("user_id") int userId
+    );
 }
