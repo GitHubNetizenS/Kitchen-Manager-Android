@@ -97,8 +97,8 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_marginTop="8dp"
-                    android:contentDescription="详情"
-                    android:src="@drawable/ic_info" />
+                    android:contentDescription="购物车"
+                    android:src="@drawable/bylist" />
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
