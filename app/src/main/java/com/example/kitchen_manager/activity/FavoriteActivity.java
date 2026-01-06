@@ -123,7 +123,7 @@ public class FavoriteActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        });
+        }, RecipeAdapter.PAGE_TYPE_FAVORITE); // 添加页面类型参数
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序
@@ -279,6 +279,7 @@ public class FavoriteActivity extends AppCompatActivity {
                         List<RecipeResponse> recipes = apiResponse.getData();
                         if (recipes != null && !recipes.isEmpty()) {
                             for (RecipeResponse recipe : recipes) {
+                                recipe.setFavorite(true); // 强制设置为已收藏
                                 Log.d("FavoriteActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
                             }
                             adapter.setRecipes(recipes);
