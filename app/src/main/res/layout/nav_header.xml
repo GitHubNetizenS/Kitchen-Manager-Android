@@ -7,32 +7,16 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <ImageView
-        android:id="@+id/iv_user_avatar"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_gravity="center_horizontal"
-        android:src="@drawable/ic_logo_orange"
-        android:contentDescription="用户头像" />
 
     <TextView
         android:id="@+id/tv_user_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="170dp"
+        android:layout_height="72dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
-        android:text="张厨师"
+        android:text="待购买清单"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tv_user_level"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="4dp"
-        android:text="美食探险家"
-        android:textColor="#E6E6E6"
-        android:textSize="14sp" />
 </LinearLayout>

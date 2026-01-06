@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <FrameLayout
+    <!-- 固定的头部区域 -->
+    <LinearLayout
+        android:id="@+id/header_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <!-- 标题 -->
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="4dp">
 
+        <!-- 标题栏 -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
@@ -32,55 +36,62 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
                 android:text="我的收藏"
-                android:textSize="20sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#FFFFFF"
+                android:textSize="20sp" />
+
             <TextView
                 android:id="@+id/tv_edit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="编辑"
-                android:textSize="16sp"
-                android:textColor="#FFFFFF"
                 android:layout_gravity="end"
-                android:paddingEnd="16dp" />
+                android:paddingEnd="16dp"
+                android:text="编辑"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
             <TextView
                 android:id="@+id/tv_select_all"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="全选"
-                android:textSize="16sp"
-                android:textColor="#FFFFFF"
                 android:layout_gravity="end"
                 android:paddingEnd="8dp"
+                android:text="全选"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:visibility="gone" />
+
             <TextView
                 android:id="@+id/tv_cancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="取消"
-                android:textSize="16sp"
-                android:textColor="#FFFFFF"
                 android:layout_gravity="end"
                 android:paddingEnd="8dp"
+                android:text="取消"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:visibility="gone" />
+
             <TextView
                 android:id="@+id/tv_delete"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="删除"
-                android:textSize="16sp"
-                android:textColor="#FFFFFF"
                 android:layout_gravity="end"
                 android:paddingEnd="16dp"
+                android:text="删除"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:visibility="gone" />
         </androidx.appcompat.widget.Toolbar>
-        <!-- 分类标签（收藏页专用） -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#F0F0F0" />
+        <!-- 分类标签区域 -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:layout_margin="40dp"
-            android:paddingBottom="8dp">
+            android:background="#FFFFFF"
+            android:padding="8dp">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -91,7 +102,7 @@
                     android:id="@+id/btn_sort_time"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
+                    android:layout_marginEnd="12dp"
                     android:background="@drawable/bg_tab_selected"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
@@ -103,7 +114,6 @@
                     android:id="@+id/btn_sort_match"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
                     android:background="@drawable/bg_tab_normal"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
@@ -112,37 +122,42 @@
                     android:textSize="14sp" />
             </LinearLayout>
         </HorizontalScrollView>
+    </LinearLayout>
 
+    <!-- 可滚动的内容区域 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_container">
 
-        <!-- 菜谱列表 -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_recipes"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="100dp"
-            android:padding="8dp"
-            app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-            app:spanCount="1"
-            tools:listitem="@layout/item_recipe" />
+    <!-- 菜谱列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_recipes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="1"
+        tools:listitem="@layout/item_recipe" />
 
-        <!-- 加载进度条 -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone" />
+    <!-- 加载进度条 -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
-        <!-- 空状态视图 -->
-        <TextView
-            android:id="@+id/emptyView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="暂无收藏内容"
-            android:textSize="18sp"
-            android:visibility="visible" />
-
+    <!-- 空状态视图 -->
+    <TextView
+        android:id="@+id/emptyView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="暂无收藏内容"
+        android:textSize="18sp"
+        android:visibility="visible" />
     </FrameLayout>
-</androidx.core.widget.NestedScrollView>
+</RelativeLayout>

@@ -15,8 +15,6 @@ public class RecipeResponse {
     private String time;
     private String difficulty;
     private String needs;
-
-    @SerializedName("isFavorite")
     private boolean isFavorite; // 确保使用正确的序列化名称
 
     // 新增：烹饪时间字段（从历史记录中获取）
