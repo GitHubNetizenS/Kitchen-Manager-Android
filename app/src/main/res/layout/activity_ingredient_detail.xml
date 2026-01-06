@@ -118,31 +118,30 @@
                     android:textStyle="normal" />
             </LinearLayout>
 
-            <!-- 分类 -->
+            <!-- 分类（修改为TextView，不可编辑） -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingVertical="8dp"
-                android:gravity="center_vertical">
+                android:paddingVertical="8dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="分类:"
-                    android:textColor="@color/dark_gray"
-                    android:textSize="14sp" />
+                    android:textColor="@color/dark_gray" />
 
-                <Spinner
-                    android:id="@+id/sp_category"
+                <TextView
+                    android:id="@+id/tv_category"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
-                    android:textSize="15sp"
-                    android:enabled="false"
-                    android:background="@null" />
+                    android:textSize="15dp"
+                    android:text="蔬菜"
+                    android:textColor="@color/black" />
             </LinearLayout>
+
 
             <!-- 入库时间 -->
             <LinearLayout
