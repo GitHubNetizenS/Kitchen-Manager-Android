@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
+import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
@@ -41,7 +42,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ProfileEditActivity extends AppCompatActivity {
     private EditText etName, etTitle, etPhone, etPassword;
     private TextView tvUserId;
-    private ImageView ivAvatar;
+    private ImageView ivAvatar,ivBack;
     private Button btnSave;
     private Button btnLogout;
     private SharedPreferences prefs;
@@ -78,6 +79,7 @@ public class ProfileEditActivity extends AppCompatActivity {
         etPhone = findViewById(R.id.et_phone);
         etPassword = findViewById(R.id.et_password);
         ivAvatar = findViewById(R.id.iv_avatar);
+        ivBack=findViewById(R.id.iv_back);
         btnSave = findViewById(R.id.btn_save);
         btnLogout = findViewById(R.id.btn_logout);
 
@@ -96,6 +98,12 @@ public class ProfileEditActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> logout());
         // 头像点击事件
         ivAvatar.setOnClickListener(v -> openImageChooser());
+        ivBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         // 更换头像文字点击事件
         findViewById(R.id.tv_change_avatar).setOnClickListener(v -> openImageChooser());
     }
