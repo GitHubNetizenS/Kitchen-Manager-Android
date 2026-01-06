@@ -184,11 +184,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
 
         // 关键修改：根据页面类型显示不同内容
         if (pageType == PAGE_TYPE_HISTORY) {
-            // 历史记录页面：显示烹饪时间（第一部分代码的逻辑）
+            // 历史记录页面：显示烹饪时间
             String cookTimeText = formatCookTime(recipe.getCookTime());
             holder.tvRecipeNeeds.setText(cookTimeText);
         } else {
-            // 普通页面：显示原材料（第一部分代码的逻辑）
+            // 普通页面：显示原材料
             String formattedNeeds = formatNeeds(recipe.getNeeds());
             holder.tvRecipeNeeds.setText(formattedNeeds);
         }
@@ -231,7 +231,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         if (isEditMode) {
             holder.cbSelect.setOnCheckedChangeListener(null);
 
-            // 第一部分代码的选择逻辑
+            // 选择逻辑
             if (pageType == PAGE_TYPE_HISTORY) {
                 holder.cbSelect.setChecked(selectedIds.contains(recipe.getHistoryId()));
                 holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
