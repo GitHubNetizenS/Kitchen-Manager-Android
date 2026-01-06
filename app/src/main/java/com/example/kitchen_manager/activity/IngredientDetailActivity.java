@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,14 +40,12 @@ import retrofit2.Response;
 public class IngredientDetailActivity extends AppCompatActivity {
 
     private ImageView ivBack, ivIngredient;
-    private TextView tvName, tvExpiryDate, tvRemainingDays, tvNutrition, tvBenefit;
-    private Spinner spCategory;
-    private EditText etStorageDate, etExpiryDays; // 新增保质期编辑框
+    private TextView tvName, tvCategory, tvExpiryDate, tvRemainingDays, tvNutrition, tvBenefit; // 修改：添加 tvCategory
+    private EditText etStorageDate, etExpiryDays;
     private Button btnEdit, btnDelete;
     private Ingredient ingredient;
 
-    // 分类选项
-    private static final String[] CATEGORIES = {"蔬菜", "肉类", "药食", "果品类", "鱼类", "五谷杂粮","水产","蛋、奶","其他"};
+    // 移除分类选项数组
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,45 +61,14 @@ public class IngredientDetailActivity extends AppCompatActivity {
     private void getIngredientData() {
         ingredient = getIntent().getParcelableExtra("ingredient");
     }
-    private String formatNutrition(String nutritionJson) {
-        if (nutritionJson == null || nutritionJson.isEmpty()) {
-            return "暂无数据";
-        }
-
-        try {
-            // 尝试解析JSON
-            JSONObject json = new JSONObject(nutritionJson);
-            JSONArray components = json.getJSONArray("components");
-
-            // 将数组元素连接为逗号分隔的字符串
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < components.length(); i++) {
-                if (i > 0) {
-                    builder.append("、"); // 使用中文顿号分隔
-                }
-                builder.append(components.getString(i));
-            }
-
-            return builder.toString();
-        } catch (JSONException e) {
-            // 如果解析失败，尝试直接处理字符串
-            if (nutritionJson.startsWith("{") && nutritionJson.endsWith("}")) {
-                // 看起来像JSON但解析失败，返回原始字符串
-                return nutritionJson;
-            }
-
-            // 如果不是JSON格式，直接返回
-            return nutritionJson;
-        }
-    }
 
     private void initViews() {
         ivBack = findViewById(R.id.iv_back);
         ivIngredient = findViewById(R.id.iv_ingredient_large);
         tvName = findViewById(R.id.tv_detail_name);
-        spCategory = findViewById(R.id.sp_category);
+        tvCategory = findViewById(R.id.tv_category); // 修改：绑定分类TextView
         etStorageDate = findViewById(R.id.et_storage_date);
-        etExpiryDays = findViewById(R.id.et_expiry_days); // 新增
+        etExpiryDays = findViewById(R.id.et_expiry_days);
         tvExpiryDate = findViewById(R.id.tv_detail_expiry_date);
         tvRemainingDays = findViewById(R.id.tv_detail_remaining_days);
         btnEdit = findViewById(R.id.btn_edit);
@@ -109,11 +76,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
         tvNutrition = findViewById(R.id.tv_nutrition);
         tvBenefit = findViewById(R.id.tv_benefit);
 
-        // 设置分类下拉菜单
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, CATEGORIES);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spCategory.setAdapter(adapter);
+        // 移除分类下拉菜单的设置代码
     }
 
     private void setupListeners() {
@@ -138,19 +101,17 @@ public class IngredientDetailActivity extends AppCompatActivity {
     }
 
     private void enterEditMode() {
-        // 启用编辑控件
-        spCategory.setEnabled(true);
+        // 只启用入库时间和保质期编辑
         etStorageDate.setEnabled(true);
-        etExpiryDays.setEnabled(true); // 新增：启用保质期编辑
+        etExpiryDays.setEnabled(true);
+        // 分类不可编辑，所以不需要任何操作
 
         // 更改按钮文本
         btnEdit.setText("完成");
     }
 
-
     private void saveChanges() {
         // 获取修改后的值
-        String newCategory = spCategory.getSelectedItem().toString();
         String newStorageDate = etStorageDate.getText().toString();
         String expiryDaysStr = etExpiryDays.getText().toString();
 
@@ -181,18 +142,14 @@ public class IngredientDetailActivity extends AppCompatActivity {
         // 计算新的食用期限
         String newExpiryDate = calculateExpiryDate(newStorageDate, newExpiryDays);
 
-        // 更新本地对象
-        ingredient.setCategory(newCategory);
+        // 更新本地对象（分类保持不变）
         ingredient.setStorageDate(newStorageDate);
         ingredient.setExpiryDate(newExpiryDate);
+        ingredient.setExpiryDays(newExpiryDays);
 
-        // 可能需要添加保质期天数到Ingredient模型中
-        //ingredient.setExpiryDays(newExpiryDays);
-
-        // 调用API更新服务器
+        // 调用API更新服务器（仍然传递分类，但它是原来的值，没有变化）
         updateIngredientOnServer(newExpiryDays);
     }
-
 
     private boolean isValidDate(String dateStr) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -205,20 +162,19 @@ public class IngredientDetailActivity extends AppCompatActivity {
         }
     }
 
-    private String calculateExpiryDate(String storageDate, int newExpiryDays) {
+    private String calculateExpiryDate(String storageDate, int expiryDays) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
             Date date = sdf.parse(storageDate);
 
-            // 假设默认保质期3天（实际应从服务器获取）
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(date);
-            calendar.add(Calendar.DAY_OF_MONTH, 3);
+            calendar.add(Calendar.DAY_OF_MONTH, expiryDays);
 
             return sdf.format(calendar.getTime());
         } catch (ParseException e) {
             e.printStackTrace();
-            return ingredient.getExpiryDate(); // 出错时返回原值
+            return ingredient.getExpiryDate();
         }
     }
 
@@ -229,18 +185,11 @@ public class IngredientDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // 添加日志
-        Log.d("IngredientDetail", "发送更新请求 - userId: " + userId +
-                ", name: " + ingredient.getName() +
-                ", category: " + ingredient.getCategory() +
-                ", storageDate: " + ingredient.getStorageDate() +
-                ", expiryDays: " + expiryDays);
-
         ApiService apiService = ApiClient.getApiService();
         Call<ApiResponse<Void>> call = apiService.updateIngredient(
                 userId,
                 ingredient.getName(),
-                ingredient.getCategory(),
+                ingredient.getCategory(), // 传递原来的分类，保持不变
                 ingredient.getStorageDate(),
                 expiryDays
         );
@@ -248,35 +197,24 @@ public class IngredientDetailActivity extends AppCompatActivity {
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                Log.d("IngredientDetail", "收到响应 - 状态码: " + response.code());
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    Toast.makeText(IngredientDetailActivity.this, "更新成功", Toast.LENGTH_SHORT).show();
 
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.d("IngredientDetail", "响应体: " + response.body().toString());
+                    // 更新UI
+                    updateUI();
 
-                    if (response.body().getCode() == 200) {
-                        Toast.makeText(IngredientDetailActivity.this, "更新成功", Toast.LENGTH_SHORT).show();
-
-                        // 更新食用期限显示
-                        updateUI();
-
-                        Intent resultIntent = new Intent();
-                        resultIntent.putExtra("updated", true);
-                        setResult(RESULT_OK, resultIntent);
-                        finish();
-                    } else {
-                        Toast.makeText(IngredientDetailActivity.this, "更新失败: " + response.body().getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e("IngredientDetail", "更新失败: " + response.body().getMessage());
-                    }
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("updated", true);
+                    setResult(RESULT_OK, resultIntent);
+                    finish();
                 } else {
-                    Toast.makeText(IngredientDetailActivity.this, "更新失败: 响应异常", Toast.LENGTH_SHORT).show();
-                    Log.e("IngredientDetail", "响应异常: " + response.message());
+                    Toast.makeText(IngredientDetailActivity.this, "更新失败", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
                 Toast.makeText(IngredientDetailActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e("IngredientDetail", "网络错误: ", t);
             }
         });
     }
@@ -358,11 +296,9 @@ public class IngredientDetailActivity extends AppCompatActivity {
             String expiryDaysStr = etExpiryDays.getText().toString();
             return Integer.parseInt(expiryDaysStr);
         } catch (NumberFormatException e) {
-            // 如果输入无效，使用模型中的保质期天数
             return ingredient.getExpiryDays();
         }
     }
-
 
     private void updateUI() {
         if (ingredient != null) {
@@ -375,13 +311,8 @@ public class IngredientDetailActivity extends AppCompatActivity {
 
             tvName.setText(ingredient.getName());
 
-            // 设置分类选择
-            for (int i = 0; i < CATEGORIES.length; i++) {
-                if (CATEGORIES[i].equals(ingredient.getCategory())) {
-                    spCategory.setSelection(i);
-                    break;
-                }
-            }
+            // 设置分类（使用TextView显示，不可编辑）
+            tvCategory.setText(ingredient.getCategory());
 
             etStorageDate.setText(ingredient.getStorageDate());
             tvExpiryDate.setText(ingredient.getExpiryDate());
@@ -423,6 +354,32 @@ public class IngredientDetailActivity extends AppCompatActivity {
         } catch (ParseException e) {
             e.printStackTrace();
             return 0;
+        }
+    }
+
+    private String formatNutrition(String nutritionJson) {
+        if (nutritionJson == null || nutritionJson.isEmpty()) {
+            return "暂无数据";
+        }
+
+        try {
+            JSONObject json = new JSONObject(nutritionJson);
+            JSONArray components = json.getJSONArray("components");
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < components.length(); i++) {
+                if (i > 0) {
+                    builder.append("、");
+                }
+                builder.append(components.getString(i));
+            }
+
+            return builder.toString();
+        } catch (JSONException e) {
+            if (nutritionJson.startsWith("{") && nutritionJson.endsWith("}")) {
+                return nutritionJson;
+            }
+            return nutritionJson;
         }
     }
 

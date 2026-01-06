@@ -38,11 +38,12 @@
                 android:textColor="#333333"
                 android:textStyle="bold" />
 
+            <!-- 修改：将到期日期改为剩余天数 -->
             <TextView
-                android:id="@+id/tv_expiry_date"
+                android:id="@+id/tv_remaining_days"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="到期日期"
+                android:text="剩余X天"
                 android:textSize="14sp"
                 android:textColor="#666666"
                 android:layout_marginTop="4dp" />
@@ -57,7 +58,7 @@
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
-        <!-- 删除按钮 - 确保 ID 与代码一致 -->
+        <!-- 删除按钮 -->
         <ImageButton
             android:id="@+id/btn_delete"
             android:layout_width="40dp"

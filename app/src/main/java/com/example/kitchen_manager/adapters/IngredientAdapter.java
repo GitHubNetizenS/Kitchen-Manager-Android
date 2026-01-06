@@ -8,13 +8,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.models.Ingredient;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.IngredientViewHolder> {
 
@@ -58,8 +64,7 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
     class IngredientViewHolder extends RecyclerView.ViewHolder {
         private ImageView ivIngredient;
         private TextView tvName;
-        private TextView tvExpiryDate;
-        private TextView tvNutrition;
+        private TextView tvRemainingDays; // 修改：改为剩余天数
         private TextView tvCategory;
         private ImageButton btnDelete;
 
@@ -67,9 +72,8 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
             super(itemView);
             ivIngredient = itemView.findViewById(R.id.iv_ingredient);
             tvName = itemView.findViewById(R.id.tv_name);
-            tvExpiryDate = itemView.findViewById(R.id.tv_expiry_date);
+            tvRemainingDays = itemView.findViewById(R.id.tv_remaining_days); // 修改ID
             tvCategory = itemView.findViewById(R.id.tv_category);
-            tvNutrition=itemView.findViewById(R.id.tv_nutrition);
             btnDelete = itemView.findViewById(R.id.btn_delete);
         }
 
@@ -78,28 +82,39 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
             if (ingredient.getImageUrl() != null && !ingredient.getImageUrl().isEmpty()) {
                 Glide.with(itemView.getContext())
                         .load(ingredient.getImageUrl())
-                        .placeholder(R.drawable.ic_logo_orange) // 占位图
-                        .error(R.drawable.ic_logo_orange)       // 错误图
+                        .placeholder(R.drawable.ic_logo_orange)
+                        .error(R.drawable.ic_logo_orange)
                         .into(ivIngredient);
             } else {
                 ivIngredient.setImageResource(R.drawable.ic_logo_orange);
             }
 
-            // 设置文本前检查视图是否为空
+            // 设置名称
             if (tvName != null) {
                 tvName.setText(ingredient.getName());
             }
 
+            // 设置分类
             if (tvCategory != null) {
                 tvCategory.setText(ingredient.getCategory());
             }
 
-            if (tvExpiryDate != null) {
-                tvExpiryDate.setText("到期: " + ingredient.getExpiryDate());
-            }
+            // 设置剩余天数（计算并设置颜色）
+            if (tvRemainingDays != null) {
+                // 计算剩余天数
+                long remainingDays = calculateRemainingDays(ingredient.getExpiryDate());
 
-            if (tvNutrition != null) {
-                tvNutrition.setText(ingredient.getFormattedNutrition());
+                // 设置文本
+                tvRemainingDays.setText("剩余" + remainingDays + "天");
+
+                // 设置颜色（使用与IngredientDetailActivity相同的逻辑）
+                if (remainingDays > 7) {
+                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.green));
+                } else if (remainingDays >= 3) {
+                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.orange));
+                } else {
+                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red));
+                }
             }
 
             // 设置点击监听器
@@ -117,6 +132,22 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
                         listener.onDeleteClick(getAdapterPosition());
                     }
                 });
+            }
+        }
+
+        /**
+         * 计算剩余天数（与IngredientDetailActivity中的逻辑一致）
+         */
+        private long calculateRemainingDays(String expiryDateStr) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            try {
+                Date expiryDate = sdf.parse(expiryDateStr);
+                Date currentDate = new Date();
+                long diffInMillis = expiryDate.getTime() - currentDate.getTime();
+                return TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                return 0;
             }
         }
     }
