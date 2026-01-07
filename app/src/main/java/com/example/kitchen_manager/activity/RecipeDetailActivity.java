@@ -79,11 +79,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         ivBack = findViewById(R.id.iv_back);
 
-        ivBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // 结束当前Activity，返回上一页面
-            }
+        ivBack.setOnClickListener(v -> {
+            finish(); // 结束当前Activity，返回上一页面
         });
         initDialogs();
         loadRecipeDetail();

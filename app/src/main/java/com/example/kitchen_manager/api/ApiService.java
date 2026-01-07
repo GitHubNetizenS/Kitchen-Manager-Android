@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.130.173:8080/";
+    String BASE_URL = "http://10.0.2.2:8080/";  // 10.0.2.2是默认的Android模拟器访问本地localhost的端口。
 
     // 用户相关接口
     @FormUrlEncoded
