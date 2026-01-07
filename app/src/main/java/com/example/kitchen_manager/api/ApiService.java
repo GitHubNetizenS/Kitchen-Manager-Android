@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.130.173:8080/";
+    String BASE_URL = "http://10.68.169.176:8080/";
 
     // 用户相关接口
     @FormUrlEncoded

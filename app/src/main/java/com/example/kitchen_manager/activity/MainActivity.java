@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 默认显示首页
         switchToFragment(new RecommendFragment());
-        tvTitle.setText("为您推荐");
+        tvTitle.setText("推荐食谱");
     }
 
     private void initViews() {
