@@ -117,10 +117,14 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
                     // 设置文本
                     tvRemainingDays.setText("剩余" + remainingDays + "天");
                     tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.orange));
+                } else if (remainingDays >= 0) {
+                    // 设置文本
+                    tvRemainingDays.setText("剩余" + remainingDays + "天");
+                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red));
                 } else {
                     // 设置文本
                     tvRemainingDays.setText("已过期" + abremainingDays + "天");
-                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red));
+                    tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.brown));
                 }
             }
 

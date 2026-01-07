@@ -354,7 +354,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
             tvRemainingDays.setTextColor(getResources().getColor(R.color.red));
         } else {
             // 过期的情况，可以设置一个特殊的颜色，比如深红色
-            tvRemainingDays.setTextColor(getResources().getColor(R.color.red));
+            tvRemainingDays.setTextColor(getResources().getColor(R.color.brown));
         }
     }
 
