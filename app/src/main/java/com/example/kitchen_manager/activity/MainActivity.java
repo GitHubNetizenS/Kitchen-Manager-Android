@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private ActivityMainBinding binding;
     private ApiService apiService;
+    private ImageView tobuy;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,10 +63,10 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawer_layout);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         fragmentManager = getSupportFragmentManager();
-        //ivMenu = findViewById(R.id.iv_menu);
         ivSearch = findViewById(R.id.iv_search);
         tvTitle = findViewById(R.id.tv_title);
         navigationView = findViewById(R.id.navigation_view);
+        tobuy = findViewById(R.id.tobuy);
     }
 
     public ApiService getApiService() {
@@ -74,13 +75,13 @@ public class MainActivity extends AppCompatActivity {
 
     // 在 setupListeners() 方法中修改搜索点击事件
     private void setupListeners() {
-        //ivMenu.setOnClickListener(v -> {
-          //  if (drawerLayout.isDrawerOpen(navigationView)) {
-           //     drawerLayout.closeDrawer(navigationView);
-           // } else {
-             //   drawerLayout.openDrawer(navigationView);
-           // }
-        // });
+        tobuy.setOnClickListener(v -> {
+            if (drawerLayout.isDrawerOpen(navigationView)) {
+                drawerLayout.closeDrawer(navigationView);
+            } else {
+                drawerLayout.openDrawer(navigationView);
+            }
+        });
 
         // 修改为启动 SearchActivity 并传递搜索意图
         ivSearch.setOnClickListener(v -> {

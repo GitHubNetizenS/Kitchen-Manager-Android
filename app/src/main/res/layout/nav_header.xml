@@ -11,10 +11,10 @@
     <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="待购买清单"
+        android:layout_height="match_parent"
+        android:text="购买清单"
         android:textColor="#FFFFFF"
-        android:textSize="30dp"
+        android:textSize="25dp"
         android:textStyle="bold"
         android:gravity="center"/>
 </LinearLayout>
