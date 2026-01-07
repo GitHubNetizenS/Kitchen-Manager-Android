@@ -91,7 +91,7 @@
                     android:contentDescription="收藏"
                     android:src="@drawable/ic_favorite_border" />
 
-                <!-- 详情图标 -->
+                <!-- 购买图标 -->
                 <ImageView
                     android:id="@+id/iv_detail"
                     android:layout_width="32dp"

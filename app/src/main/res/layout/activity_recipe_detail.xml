@@ -2,164 +2,161 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FFF9F3">
 
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@drawable/bg_splash_gradient"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+        <ImageView
+            android:id="@+id/iv_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/back"
+            android:contentDescription="返回" />
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="食谱详情"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
+    </androidx.appcompat.widget.Toolbar>
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFF9F3"
         android:fillViewport="true">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <!-- 顶部渐变工具栏 -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bg_splash_gradient"
-            android:elevation="4dp"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/iv_back"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:padding="8dp"
-                android:src="@drawable/back"
-                android:contentDescription="返回" />
-
-            <TextView
-                android:id="@+id/tv_title"
+            <!-- 加载进度条 -->
+            <ProgressBar
+                android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginVertical="32dp"
+                android:visibility="gone" />
+
+            <!-- 食谱图片 -->
+            <ImageView
+                android:id="@+id/recipe_image"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/placeholder" />
+
+            <!-- 食谱信息卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:elevation="4dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- 食谱名称 -->
+                    <TextView
+                        android:id="@+id/recipe_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#333333"
+                        android:gravity="center" />
+
+                    <!-- 食谱属性（时间、难度等） -->
+                    <TextView
+                        android:id="@+id/recipe_attributes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textSize="16sp"
+                        android:textColor="#777777"
+                        android:gravity="center" />
+
+                    <!-- 分隔线 -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="16dp"
+                        android:background="#EEEEEE" />
+
+                    <!-- 食材标题 -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="食材清单"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF7A00" />
+
+                    <!-- 食材列表 -->
+                    <TextView
+                        android:id="@+id/recipe_ingredients"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textSize="16sp"
+                        android:textColor="#333333" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 烹饪步骤卡片 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="食谱详情"
-                android:textSize="20sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold" />
-        </androidx.appcompat.widget.Toolbar>
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="32dp"
+                android:elevation="4dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp">
 
-        <!-- 加载进度条 -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginVertical="32dp"
-            android:visibility="gone" />
-
-        <!-- 食谱图片 -->
-        <ImageView
-            android:id="@+id/recipe_image"
-            android:layout_width="match_parent"
-            android:layout_height="240dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/placeholder" />
-
-        <!-- 食谱信息卡片 -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:elevation="4dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <!-- 食谱名称 -->
-                <TextView
-                    android:id="@+id/recipe_name"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"
-                    android:gravity="center" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <!-- 食谱属性（时间、难度等） -->
-                <TextView
-                    android:id="@+id/recipe_attributes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textSize="16sp"
-                    android:textColor="#777777"
-                    android:gravity="center" />
+                    <!-- 步骤标题 -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="烹饪步骤"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF7A00" />
 
-                <!-- 分隔线 -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="16dp"
-                    android:background="#EEEEEE" />
-
-                <!-- 食材标题 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="食材清单"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#FF7A00" />
-
-                <!-- 食材列表 -->
-                <TextView
-                    android:id="@+id/recipe_ingredients"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textSize="16sp"
-                    android:textColor="#333333" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- 烹饪步骤卡片 -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="32dp"
-            android:elevation="4dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <!-- 步骤标题 -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="烹饪步骤"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#FF7A00" />
-
-                <!-- 步骤内容 -->
-                <TextView
-                    android:id="@+id/recipe_steps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textSize="16sp"
-                    android:textColor="#333333" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
-
+                    <!-- 步骤内容 -->
+                    <TextView
+                        android:id="@+id/recipe_steps"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textSize="16sp"
+                        android:textColor="#333333" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
     </ScrollView>
 
     <!-- 添加底部悬浮按钮 -->

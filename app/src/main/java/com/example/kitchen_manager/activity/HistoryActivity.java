@@ -132,7 +132,7 @@ public class HistoryActivity extends AppCompatActivity {
                     showRecipeDetail(recipeId);
                 }
             }
-        });
+        }, RecipeAdapter.PAGE_TYPE_HISTORY); // 添加页面类型参数
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序

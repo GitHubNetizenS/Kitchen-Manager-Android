@@ -44,6 +44,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
     private EditText etStorageDate, etExpiryDays;
     private Button btnEdit, btnDelete;
     private Ingredient ingredient;
+    private TextView tvRemainingDaysLabel; // 新增
 
     // 移除分类选项数组
 
@@ -75,6 +76,7 @@ public class IngredientDetailActivity extends AppCompatActivity {
         btnDelete = findViewById(R.id.btn_delete);
         tvNutrition = findViewById(R.id.tv_nutrition);
         tvBenefit = findViewById(R.id.tv_benefit);
+        tvRemainingDaysLabel = findViewById(R.id.tv_remaining_days_label);
 
         // 移除分类下拉菜单的设置代码
     }
@@ -332,15 +334,27 @@ public class IngredientDetailActivity extends AppCompatActivity {
 
     private void updateRemainingDays(String expiryDateStr) {
         long remainingDays = calculateRemainingDays(expiryDateStr);
-        tvRemainingDays.setText(String.format("%d天", remainingDays));
+
+        // 根据剩余天数的正负设置标签文本
+        if (remainingDays >= 0) {
+            tvRemainingDaysLabel.setText("剩余天数");
+            tvRemainingDays.setText(String.format("%d天", remainingDays));
+        } else {
+            tvRemainingDaysLabel.setText("过期天数");
+            // 显示过期天数的绝对值（正数）
+            tvRemainingDays.setText(String.format("%d天", Math.abs(remainingDays)));
+        }
 
         // 设置颜色
         if (remainingDays > 7) {
             tvRemainingDays.setTextColor(getResources().getColor(R.color.green));
         } else if (remainingDays >= 3) {
             tvRemainingDays.setTextColor(getResources().getColor(R.color.orange));
-        } else {
+        } else if (remainingDays >= 0) {
             tvRemainingDays.setTextColor(getResources().getColor(R.color.red));
+        } else {
+            // 过期的情况，可以设置一个特殊的颜色，比如深红色
+            tvRemainingDays.setTextColor(getResources().getColor(R.color.brown));
         }
     }
 
