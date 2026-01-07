@@ -18,11 +18,10 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:maxHeight="400dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp">
 
-        <!-- 注意：这里使用了固定的id ingredientsContainer -->
         <LinearLayout
             android:id="@+id/ingredientsContainer"
             android:layout_width="match_parent"

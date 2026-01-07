@@ -173,6 +173,10 @@
         android:contentDescription="动手做"
         app:backgroundTint="#FF7A00"
         app:srcCompat="@drawable/ic_cook"
-        app:tint="#FFFFFF" />
+        app:tint="#FFFFFF"
+        app:elevation="8dp"
+        app:maxImageSize="28dp"
+        android:scaleType="center"
+        app:rippleColor="#FF9E40" />
 
 </RelativeLayout>
