@@ -103,16 +103,23 @@ public class IngredientAdapter extends RecyclerView.Adapter<IngredientAdapter.In
             if (tvRemainingDays != null) {
                 // 计算剩余天数
                 long remainingDays = calculateRemainingDays(ingredient.getExpiryDate());
+                long abremainingDays = -remainingDays;
 
                 // 设置文本
                 tvRemainingDays.setText("剩余" + remainingDays + "天");
 
                 // 设置颜色（使用与IngredientDetailActivity相同的逻辑）
                 if (remainingDays > 7) {
+                    // 设置文本
+                    tvRemainingDays.setText("剩余" + remainingDays + "天");
                     tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.green));
                 } else if (remainingDays >= 3) {
+                    // 设置文本
+                    tvRemainingDays.setText("剩余" + remainingDays + "天");
                     tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.orange));
                 } else {
+                    // 设置文本
+                    tvRemainingDays.setText("已过期" + abremainingDays + "天");
                     tvRemainingDays.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red));
                 }
             }
