@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity {
         return apiService;
     }
 
-    // 在 setupListeners() 方法中修改搜索点击事件
     private void setupListeners() {
+        //打开侧边栏
         tobuy.setOnClickListener(v -> {
             if (drawerLayout.isDrawerOpen(navigationView)) {
                 drawerLayout.closeDrawer(navigationView);

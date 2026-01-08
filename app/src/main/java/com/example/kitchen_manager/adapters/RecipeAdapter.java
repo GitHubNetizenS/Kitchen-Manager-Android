@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -181,20 +180,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
             RecipeResponse recipe = recipeList.get(i);
             if (recipe.getRecipeId() == recipeId) {
                 recipe.setInShoppingCart(inShoppingCart);
-                notifyItemChanged(i);
-                break;
-            }
-        }
-    }
-
-    /**
-     * 更新单个菜谱的收藏状态
-     */
-    public void updateFavoriteStatus(int recipeId, boolean isFavorite) {
-        for (int i = 0; i < recipeList.size(); i++) {
-            RecipeResponse recipe = recipeList.get(i);
-            if (recipe.getRecipeId() == recipeId) {
-                recipe.setFavorite(isFavorite);
                 notifyItemChanged(i);
                 break;
             }
