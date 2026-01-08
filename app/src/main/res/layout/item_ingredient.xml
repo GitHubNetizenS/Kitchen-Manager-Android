@@ -39,23 +39,35 @@
                 android:textStyle="bold" />
 
             <!-- 修改：将到期日期改为剩余天数 -->
-            <TextView
-                android:id="@+id/tv_remaining_days"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="剩余X天"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp" />
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tv_category"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="分类"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp" />
+                <TextView
+                    android:id="@+id/tv_category"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="分类"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:layout_weight="2"/>
+
+                <TextView
+                    android:id="@+id/tv_remaining_days"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="剩余X天"
+                    android:textColor="#666666"
+                    android:textSize="14sp"
+                    android:layout_weight="1"
+                    />
+
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- 删除按钮 -->
