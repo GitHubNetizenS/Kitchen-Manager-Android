@@ -15,7 +15,20 @@ public class RecipeResponse {
     private String time;
     private String difficulty;
     private String needs;
-    private boolean isFavorite; // 确保使用正确的序列化名称
+    private boolean isFavorite; // 收藏状态
+
+    // 新增：购物车状态
+    @SerializedName("inShoppingCart")
+    private boolean inShoppingCart;
+
+    // 新增：显式添加inShoppingCart的getter和setter
+    public boolean isInShoppingCart() {
+        return inShoppingCart;
+    }
+
+    public void setInShoppingCart(boolean inShoppingCart) {
+        this.inShoppingCart = inShoppingCart;
+    }
 
     // 新增：烹饪时间字段（从历史记录中获取）
     @SerializedName("cook_time")
@@ -25,12 +38,15 @@ public class RecipeResponse {
     public String getCookTime() {
         return cookTime;
     }
+
     public void setCookTime(String cookTime) {
         this.cookTime = cookTime;
     }
+
     public int getHistoryId() {
         return historyId;
     }
+
     public void setHistoryId(int historyId) {
         this.historyId = historyId;
     }
