@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -348,7 +349,7 @@ public class HistoryActivity extends AppCompatActivity {
                             emptyView.setVisibility(View.GONE);
 
                             // 关键：逐一检查购物车状态
-                            checkCartStatusOneByOne(recipes);
+                            checkCartStatusForRecipes(recipes);
                         } else {
                             emptyView.setText("暂无烹饪记录");
                             emptyView.setVisibility(View.VISIBLE);
@@ -368,6 +369,17 @@ public class HistoryActivity extends AppCompatActivity {
                 showError("网络错误: " + t.getMessage());
             }
         });
+    }
+
+    /**
+     * 检查菜谱的购物车状态
+     */
+    private void checkCartStatusForRecipes(List<RecipeResponse> recipes) {
+        if (userId == -1) return;
+
+        for (RecipeResponse recipe : recipes) {
+            checkSingleCartStatus(recipe);
+        }
     }
 
     private void favoriteRecipe(int recipeId) {
@@ -527,17 +539,6 @@ public class HistoryActivity extends AppCompatActivity {
                 Log.d("HistoryActivity", "更新购物车状态: recipeId=" + recipeId + ", inShoppingCart=" + inShoppingCart);
                 break;
             }
-        }
-    }
-
-    /**
-     * 逐一检查购物车状态
-     */
-    private void checkCartStatusOneByOne(List<RecipeResponse> recipes) {
-        if (userId == -1) return;
-
-        for (RecipeResponse recipe : recipes) {
-            checkSingleCartStatus(recipe);
         }
     }
 

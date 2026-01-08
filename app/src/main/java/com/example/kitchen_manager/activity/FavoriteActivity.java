@@ -25,8 +25,8 @@ import com.example.kitchen_manager.response.RecipeResponse;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import retrofit2.Call;
@@ -395,8 +395,8 @@ public class FavoriteActivity extends AppCompatActivity {
                             rvRecipes.setVisibility(View.VISIBLE);
                             emptyView.setVisibility(View.GONE);
 
-                            // 关键：逐一检查购物车状态
-                            checkCartStatusOneByOne(recipes);
+                            // 然后异步检查购物车状态
+                            checkCartStatusForRecipes(recipes);
                         } else {
                             emptyView.setText("暂无收藏内容");
                             emptyView.setVisibility(View.VISIBLE);
@@ -426,9 +426,9 @@ public class FavoriteActivity extends AppCompatActivity {
 
 
     /**
-     * 逐一检查购物车状态
+     * 检查菜谱的购物车状态
      */
-    private void checkCartStatusOneByOne(List<RecipeResponse> recipes) {
+    private void checkCartStatusForRecipes(List<RecipeResponse> recipes) {
         if (userId == -1) return;
 
         for (RecipeResponse recipe : recipes) {

@@ -79,6 +79,11 @@ public class RecommendFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
         emptyView = view.findViewById(R.id.emptyView);
 
+        // 设置初始状态
+        progressBar.setVisibility(View.GONE);
+        emptyView.setVisibility(View.GONE);
+        rvRecipes.setVisibility(View.VISIBLE);
+
         btnAll = view.findViewById(R.id.btn_category_all);
         btnBreakfast = view.findViewById(R.id.btn_category_breakfast);
         btnOther = view.findViewById(R.id.btn_category_other);
@@ -284,6 +289,7 @@ public class RecommendFragment extends Fragment {
 
                                 rvRecipes.setVisibility(View.VISIBLE);
                                 emptyView.setVisibility(View.GONE);
+                                adapter.notifyDataSetChanged();
                             });
 
                             hasMore = currentPage < totalPages;
@@ -400,17 +406,21 @@ public class RecommendFragment extends Fragment {
 
                             // 解析购物车状态
                             boolean inShoppingCart = false;
-                            if (map.containsKey("inShoppingCart")) {
-                                Object cartObj = map.get("inShoppingCart");
-                                if (cartObj instanceof Boolean) {
-                                    inShoppingCart = (Boolean) cartObj;
-                                } else if (cartObj instanceof Number) {
-                                    inShoppingCart = ((Number) cartObj).intValue() == 1;
+                            // 检查所有可能的键名
+                            String[] possibleCartKeys = {"inShoppingCart", "inshoppingcart", "IN_SHOPPING_CART", "cart_status"};
+                            for (String key : possibleCartKeys) {
+                                if (map.containsKey(key)) {
+                                    Object cartObj = map.get(key);
+                                    inShoppingCart = parseBooleanValue(cartObj);
+                                    Log.d("RecommendFragment", "找到购物车状态 key=" + key + ", value=" + cartObj + ", parsed=" + inShoppingCart);
+                                    break;
                                 }
                             }
+
+                            // 如果没找到，默认false
                             recipe.setInShoppingCart(inShoppingCart);
 
-                            recipes.add(recipe);
+                            recipes.add(recipe); // 重要：确保添加到列表中
                         }
                     }
                 }
@@ -419,6 +429,7 @@ public class RecommendFragment extends Fragment {
             Log.e("RecommendFragment", "数据解析错误", e);
         }
 
+        Log.d("RecommendFragment", "解析出的菜谱数量: " + recipes.size());
         return recipes;
     }
 
