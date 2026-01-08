@@ -1,9 +1,14 @@
 package com.example.kitchen_manager.activity;
 
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +29,7 @@ import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.models.Ingredient;
 import com.example.kitchen_manager.response.ApiResponse;
+import com.example.kitchen_manager.response.IngredientResponse;
 import com.example.kitchen_manager.response.RecipeDetailResponse;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
@@ -31,7 +37,9 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -46,12 +54,15 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private TextView recipeAttributes;
     private TextView recipeIngredientsText;
     private TextView recipeSteps;
+    private TextView ingredientComparationText; // 新增：食材比对文本
     private ProgressBar progressBar;
     private List<Ingredient> recipeIngredientsList;
     private AlertDialog depletionDialog;
     private AlertDialog selectionDialog;
     private ImageView ivBack;
     private List<CheckBox> ingredientCheckboxes = new ArrayList<>();
+    // 新增：存储用户已有食材
+    private List<IngredientResponse> userIngredients = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +87,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         recipeAttributes = findViewById(R.id.recipe_attributes);
         recipeIngredientsText = findViewById(R.id.recipe_ingredients);
         recipeSteps = findViewById(R.id.recipe_steps);
+        ingredientComparationText = findViewById(R.id.ingredient_comparation); // 初始化新组件
         progressBar = findViewById(R.id.progressBar);
         ivBack = findViewById(R.id.iv_back);
 
@@ -84,8 +96,199 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
         initDialogs();
         loadRecipeDetail();
+
+        // 如果用户已登录，加载用户食材
+        if (userId != 0) {
+            loadUserIngredients();
+        }
     }
 
+    // 新增方法：加载用户已有食材
+    private void loadUserIngredients() {
+        ApiService apiService = ApiClient.getApiService();
+        Call<ApiResponse<List<IngredientResponse>>> call = apiService.getUserIngredients(userId);
+
+        call.enqueue(new Callback<ApiResponse<List<IngredientResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<IngredientResponse>>> call,
+                                   Response<ApiResponse<List<IngredientResponse>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<IngredientResponse>> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
+                        userIngredients = apiResponse.getData();
+                        Log.d("UserIngredients", "加载用户食材成功，数量: " + userIngredients.size());
+
+                        // 重新加载菜谱详情以更新比对显示
+                        loadRecipeIngredientsForComparation();
+                    }
+                } else {
+                    Log.e("UserIngredients", "加载用户食材失败: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<IngredientResponse>>> call, Throwable t) {
+                Log.e("UserIngredients", "网络错误: " + t.getMessage());
+            }
+        });
+    }
+
+    // 新增方法：加载菜谱关联的食材库食材
+    private void loadRecipeIngredientsForComparation() {
+        ApiService apiService = ApiClient.getApiService();
+        Call<ApiResponse<List<Ingredient>>> call = apiService.getRecipeIngredients(recipeId);
+
+        call.enqueue(new Callback<ApiResponse<List<Ingredient>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<Ingredient>>> call,
+                                   Response<ApiResponse<List<Ingredient>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<Ingredient>> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
+                        List<Ingredient> recipeStandardIngredients = apiResponse.getData();
+                        Log.d("RecipeIngredients", "加载菜谱食材成功，数量: " + recipeStandardIngredients.size());
+
+                        // 更新食材比对显示
+                        updateIngredientComparation(recipeStandardIngredients);
+                    }
+                } else {
+                    Log.e("RecipeIngredients", "加载菜谱食材失败: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<Ingredient>>> call, Throwable t) {
+                Log.e("RecipeIngredients", "网络错误: " + t.getMessage());
+            }
+        });
+    }
+
+    // 新增方法：更新食材比对显示
+    // 修改 updateIngredientComparation 方法
+    private void updateIngredientComparation(List<Ingredient> recipeStandardIngredients) {
+        if (recipeStandardIngredients == null || recipeStandardIngredients.isEmpty()) {
+            ingredientComparationText.setText("暂无食材信息");
+            return;
+        }
+
+        // 创建用户已有食材名称集合，便于快速查找
+        Set<String> userIngredientNames = new HashSet<>();
+        for (IngredientResponse userIngredient : userIngredients) {
+            userIngredientNames.add(userIngredient.getName());
+        }
+
+        // 使用 SpannableStringBuilder 构建带有颜色的文本
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        for (int i = 0; i < recipeStandardIngredients.size(); i++) {
+            Ingredient ingredient = recipeStandardIngredients.get(i);
+            String ingredientName = ingredient.getName();
+
+            // 添加换行符（除了第一个）
+            if (i > 0) {
+                builder.append("\n");
+            }
+
+            // 添加食材名称
+            String itemText = "· " + ingredientName;
+            int start = builder.length();
+            builder.append(itemText);
+            int end = builder.length();
+
+            // 设置颜色：绿色表示用户已有，红色表示用户没有
+            int color;
+            if (userIngredientNames.contains(ingredientName)) {
+                color = Color.parseColor("#4CAF50"); // 绿色
+            } else {
+                color = Color.parseColor("#F44336"); // 红色
+            }
+
+            // 应用颜色到这段文本
+            builder.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        // 设置文本到TextView
+        ingredientComparationText.setText(builder);
+    }
+
+    // 修改原有的displayRecipe方法，在显示菜谱详情时也加载食材比对
+    private void displayRecipe(RecipeDetailResponse recipe) {
+        if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
+            Glide.with(this)
+                    .load(recipe.getImageUrl())
+                    .placeholder(R.drawable.placeholder)
+                    .error(R.drawable.placeholder)
+                    .into(recipeImage);
+        } else {
+            recipeImage.setImageResource(R.drawable.placeholder);
+        }
+
+        recipeName.setText(recipe.getName() != null ? recipe.getName() : "未知菜谱");
+
+        String attributes = String.format("口味: %s · 方法: %s · 时间: %s · 难度: %s",
+                recipe.getTaste() != null ? recipe.getTaste() : "未知",
+                recipe.getMethod() != null ? recipe.getMethod() : "未知",
+                recipe.getTime() != null ? recipe.getTime() : "未知",
+                recipe.getDifficulty() != null ? recipe.getDifficulty() : "未知");
+        recipeAttributes.setText(attributes);
+
+        // 显示菜谱原料
+        StringBuilder formattedNeeds = new StringBuilder("");
+        if (recipe.getNeeds() != null && !recipe.getNeeds().isEmpty()) {
+            try {
+                Gson gson = new Gson();
+                Type listType = new TypeToken<List<String>>(){}.getType();
+                List<String> ingredients = gson.fromJson(recipe.getNeeds(), listType);
+
+                for (String ingredient : ingredients) {
+                    formattedNeeds.append("· ").append(ingredient).append("\n");
+                }
+            } catch (Exception e) {
+                String needsStr = recipe.getNeeds().trim();
+                if (needsStr.startsWith("[") && needsStr.endsWith("]")) {
+                    needsStr = needsStr.substring(1, needsStr.length()-1);
+                }
+                String[] ingredients = needsStr.split(",");
+                for (String ingredient : ingredients) {
+                    ingredient = ingredient.trim().replaceAll("^\"|\"$", "");
+                    formattedNeeds.append("· ").append(ingredient).append("\n");
+                }
+            }
+        } else {
+            formattedNeeds.append("暂无原料信息");
+        }
+        recipeIngredientsText.setText(formattedNeeds.toString());
+
+        StringBuilder formattedSteps = new StringBuilder("步骤:\n");
+        if (recipe.getSteps() != null && !recipe.getSteps().isEmpty()) {
+            try {
+                Gson gson = new Gson();
+                Type listType = new TypeToken<List<String>>(){}.getType();
+                List<String> stepList = gson.fromJson(recipe.getSteps(), listType);
+
+                for (int i = 0; i < stepList.size(); i++) {
+                    formattedSteps.append(stepList.get(i)).append("\n\n");
+                }
+            } catch (Exception e) {
+                formattedSteps.append(recipe.getSteps());
+            }
+        } else {
+            formattedSteps.append("暂无步骤信息");
+        }
+        recipeSteps.setText(formattedSteps.toString());
+
+        // 加载食材库比对信息
+        if (userId != 0) {
+            // 如果用户已登录，确保用户食材已加载
+            if (!userIngredients.isEmpty()) {
+                loadRecipeIngredientsForComparation();
+            }
+        } else {
+            // 用户未登录，显示提示
+            ingredientComparationText.setText("请登录后查看食材比对");
+            ingredientComparationText.setTextColor(Color.parseColor("#777777"));
+        }
+    }
     private void initDialogs() {
         View depletionView = LayoutInflater.from(this).inflate(R.layout.dialog_ingredient_depletion, null);
         depletionDialog = new AlertDialog.Builder(this)
@@ -371,70 +574,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void displayRecipe(RecipeDetailResponse recipe) {
-        if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
-            Glide.with(this)
-                    .load(recipe.getImageUrl())
-                    .placeholder(R.drawable.placeholder)
-                    .error(R.drawable.placeholder)
-                    .into(recipeImage);
-        } else {
-            recipeImage.setImageResource(R.drawable.placeholder);
-        }
-
-        recipeName.setText(recipe.getName() != null ? recipe.getName() : "未知菜谱");
-
-        String attributes = String.format("口味: %s · 方法: %s · 时间: %s · 难度: %s",
-                recipe.getTaste() != null ? recipe.getTaste() : "未知",
-                recipe.getMethod() != null ? recipe.getMethod() : "未知",
-                recipe.getTime() != null ? recipe.getTime() : "未知",
-                recipe.getDifficulty() != null ? recipe.getDifficulty() : "未知");
-        recipeAttributes.setText(attributes);
-
-        StringBuilder formattedNeeds = new StringBuilder("原料:\n");
-        if (recipe.getNeeds() != null && !recipe.getNeeds().isEmpty()) {
-            try {
-                Gson gson = new Gson();
-                Type listType = new TypeToken<List<String>>(){}.getType();
-                List<String> ingredients = gson.fromJson(recipe.getNeeds(), listType);
-
-                for (String ingredient : ingredients) {
-                    formattedNeeds.append("· ").append(ingredient).append("\n");
-                }
-            } catch (Exception e) {
-                String needsStr = recipe.getNeeds().trim();
-                if (needsStr.startsWith("[") && needsStr.endsWith("]")) {
-                    needsStr = needsStr.substring(1, needsStr.length()-1);
-                }
-                String[] ingredients = needsStr.split(",");
-                for (String ingredient : ingredients) {
-                    ingredient = ingredient.trim().replaceAll("^\"|\"$", "");
-                    formattedNeeds.append("· ").append(ingredient).append("\n");
-                }
-            }
-        } else {
-            formattedNeeds.append("暂无原料信息");
-        }
-        recipeIngredientsText.setText(formattedNeeds.toString());
-
-        StringBuilder formattedSteps = new StringBuilder("步骤:\n");
-        if (recipe.getSteps() != null && !recipe.getSteps().isEmpty()) {
-            try {
-                Gson gson = new Gson();
-                Type listType = new TypeToken<List<String>>(){}.getType();
-                List<String> stepList = gson.fromJson(recipe.getSteps(), listType);
-
-                for (int i = 0; i < stepList.size(); i++) {
-                    formattedSteps.append(stepList.get(i)).append("\n\n");
-                }
-            } catch (Exception e) {
-                formattedSteps.append(recipe.getSteps());
-            }
-        } else {
-            formattedSteps.append("暂无步骤信息");
-        }
-        recipeSteps.setText(formattedSteps.toString());
-    }
 
     private void showError(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();

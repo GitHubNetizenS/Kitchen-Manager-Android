@@ -46,9 +46,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -424,10 +426,10 @@ public class PhotoRecognitionActivity extends AppCompatActivity {
             // 根据模式设置不同指令
             String instruction;
             if (currentMode == MODE_FOOD || currentMode == MODE_TEXT) {
-                instruction = "请识别这张图片中的食材，只回答食材名称，多个食材用逗号分隔。如果没有食材，回答'未识别到食材'";
+                instruction = "请识别这张图片中的食材，只回答标准的食材名称，多个食材用逗号分隔。如果没有食材，回答'未识别到食材'";
             } else {
                 instruction = "请识别这张超市小票中的食材项，按以下规则输出："
-                        + "1. 只列出食材名称（如'西红柿'，不要带数量/价格）"
+                        + "1. 只列出食材标准名称（如'西红柿'，不要带数量/价格）"
                         + "2. 每行一个食材"
                         + "3. 非食材内容不要输出"
                         + "4. 没有食材时回答'未识别到食材'";
