@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.0.2.2:8080/";  // 10.0.2.2是默认的Android模拟器访问本地localhost的端口。
+    String BASE_URL = "http://10.68.171.35:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -199,4 +199,55 @@ public interface ApiService {
             @Query("page_size") int pageSize,
             @Query("user_id") int userId
     );
+
+    // 购物车相关接口
+    @FormUrlEncoded
+    @POST("api/cart/add")
+    Call<ApiResponse<Void>> addToCart(
+            @Field("user_id") int userId,
+            @Field("recipe_id") int recipeId
+    );
+
+    @FormUrlEncoded
+    @POST("api/cart/remove")
+    Call<ApiResponse<Void>> removeFromCart(
+            @Field("user_id") int userId,
+            @Field("recipe_id") int recipeId
+    );
+
+    // 新增：切换购物车状态接口
+    @FormUrlEncoded
+    @POST("api/cart/toggle")
+    Call<ApiResponse<Void>> toggleCart(
+            @Field("user_id") int userId,
+            @Field("recipe_id") int recipeId
+    );
+
+    @GET("api/cart/check")
+    Call<ApiResponse<Boolean>> checkIfInCart(
+            @Query("user_id") int userId,
+            @Query("recipe_id") int recipeId
+    );
+
+    @GET("api/cart/recipes")
+    Call<ApiResponse<List<Integer>>> getCartRecipes(
+            @Query("user_id") int userId
+    );
+
+    @GET("api/recipelist/withcart")
+    Call<ApiResponse<Map<String, Object>>> getRecipeListWithCartStatus(
+            @Query("tag_id") int tagId,
+            @Query("page") int page,
+            @Query("page_size") int pageSize,
+            @Query("user_id") int userId
+    );
+
+    // 搜索接口也需要支持购物车状态
+    @GET("api/search/withcart")
+    Call<ApiResponse<List<RecipeResponse>>> searchRecipesWithCartStatus(
+            @Query("keyword") String keyword,
+            @Query("sort") String sortType,
+            @Query("user_id") int userId
+    );
+
 }

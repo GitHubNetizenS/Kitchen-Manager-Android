@@ -1,7 +1,12 @@
 package com.example.kitchen_manager.adapters;
 
 import android.content.Context;
-import android.text.TextUtils;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,380 +14,433 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.kitchen_manager.R;
+import com.example.kitchen_manager.api.ApiClient;
+import com.example.kitchen_manager.api.ApiService;
+import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 
-public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-    private final Context context;
-    private List<RecipeResponse> recipeList;
-    private final OnItemClickListener listener;
-    private boolean isEditMode = false;
-    private Set<Integer> selectedIds = new HashSet<>();
-
-    // 新增：页面类型常量
-    public static final int PAGE_TYPE_NORMAL = 0;    // 普通页面（显示原材料）
-    public static final int PAGE_TYPE_HISTORY = 1;   // 历史记录页面（显示烹饪时间）
-    public static final int PAGE_TYPE_FAVORITE = 2;   // 收藏页面
-    private int pageType = PAGE_TYPE_NORMAL;
+public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder> {
 
     public interface OnItemClickListener {
-        void onFavoriteClick(int recipeId,boolean isCurrentlyFavorite); // 只传递菜谱ID
-        void onDetailClick(int recipeId);   // 只传递菜谱ID
+        void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite);
+        void onDetailClick(int recipeId);
+        void onCartClick(int recipeId, boolean isCurrentlyInCart);
     }
 
-    private static class RecipeDiffCallback extends DiffUtil.Callback {
-        private final List<RecipeResponse> oldList;
-        private final List<RecipeResponse> newList;
+    public static final int PAGE_TYPE_NORMAL = 0;
+    public static final int PAGE_TYPE_FAVORITE = 1;
+    public static final int PAGE_TYPE_HISTORY = 2;
 
-        public RecipeDiffCallback(List<RecipeResponse> oldList, List<RecipeResponse> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
+    private Context context;
+    private List<RecipeResponse> recipeList;
+    private OnItemClickListener listener;
+    private int pageType;
+    private boolean isSelectionMode = false;
+    private boolean isEditMode = false;
+    private List<Integer> selectedItems = new ArrayList<>();
+    private Set<Integer> selectedIds = new HashSet<>();
+    private int userId = -1;
+    private ApiService apiService;
+    private Handler mainHandler;
 
-        @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getRecipeId() ==
-                    newList.get(newItemPosition).getRecipeId();
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            RecipeResponse oldRecipe = oldList.get(oldItemPosition);
-            RecipeResponse newRecipe = newList.get(newItemPosition);
-
-            return Objects.equals(oldRecipe.getName(), newRecipe.getName()) &&
-                    Objects.equals(oldRecipe.getImageUrl(), newRecipe.getImageUrl()) &&
-                    oldRecipe.isFavorite() == newRecipe.isFavorite();
-        }
-    }
-
-    // 修改构造函数：添加页面类型参数
-    public RecipeAdapter(Context context, List<RecipeResponse> recipes,
-                         OnItemClickListener listener, int pageType) {
+    public RecipeAdapter(Context context, List<RecipeResponse> recipeList, OnItemClickListener listener, int pageType) {
         this.context = context;
-        this.recipeList = recipes;
+        this.recipeList = recipeList != null ? recipeList : new ArrayList<>();
         this.listener = listener;
         this.pageType = pageType;
+        this.apiService = ApiClient.getApiService();
+        this.mainHandler = new Handler(Looper.getMainLooper());
+
+        // 获取用户ID
+        SharedPreferences prefs = context.getSharedPreferences("user_session", Context.MODE_PRIVATE);
+        this.userId = prefs.getInt("user_id", -1);
     }
 
-    // 保留原来的构造函数（兼容其他页面）
-    public RecipeAdapter(Context context, List<RecipeResponse> recipes, OnItemClickListener listener) {
-        this(context, recipes, listener, PAGE_TYPE_NORMAL);
+    public void setRecipes(List<RecipeResponse> recipes) {
+        this.recipeList = recipes != null ? recipes : new ArrayList<>();
+        notifyDataSetChanged();
     }
 
-    // 新增：设置页面类型的方法
-    public void setPageType(int pageType) {
-        this.pageType = pageType;
-        notifyDataSetChanged(); // 刷新显示
+    public List<RecipeResponse> getRecipes() {
+        return recipeList;
     }
 
-    public void setRecipes(List<RecipeResponse> newRecipes) {
-        List<RecipeResponse> newList = new ArrayList<>(newRecipes);
-
-        RecipeDiffCallback diffCallback = new RecipeDiffCallback(recipeList, newList);
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
-
-        this.recipeList.clear();
-        this.recipeList.addAll(newList);
-
-        diffResult.dispatchUpdatesTo(this);
+    public void setSelectionMode(boolean selectionMode) {
+        this.isSelectionMode = selectionMode;
+        if (!selectionMode) {
+            selectedItems.clear();
+            selectedIds.clear();
+        }
+        notifyDataSetChanged();
     }
 
     public void setEditMode(boolean editMode) {
         this.isEditMode = editMode;
         if (!editMode) {
+            selectedItems.clear();
             selectedIds.clear();
         }
+        notifyDataSetChanged();
+    }
+
+    public boolean isSelectionMode() {
+        return isSelectionMode;
+    }
+
+    public boolean isEditMode() {
+        return isEditMode;
+    }
+
+    public List<Integer> getSelectedItems() {
+        return selectedItems;
     }
 
     public Set<Integer> getSelectedIds() {
-        return new HashSet<>(selectedIds);
+        return selectedIds;
     }
 
     public void removeSelectedId(int id) {
         selectedIds.remove(id);
-    }
-
-    // 第一部分代码中的方法：历史记录页面的全选
-    public void selectAllHistory(boolean select) {
-        selectedIds.clear();
-        if (select) {
-            for (RecipeResponse recipe : recipeList) {
-                selectedIds.add(recipe.getHistoryId());
-            }
-        }
-    }
-
-    // 第一部分代码中的方法：收藏页面的全选
-    public void selectAllFavorite(boolean select) {
-        selectedIds.clear();
-        if (select) {
-            for (RecipeResponse recipe : recipeList) {
-                selectedIds.add(recipe.getRecipeId());
-            }
-        }
-    }
-
-    // 第二部分代码中的方法：通用的全选
-    public void selectAll(boolean select) {
-        selectedIds.clear();
-        if (select) {
-            for (RecipeResponse recipe : recipeList) {
-                selectedIds.add(recipe.getRecipeId());
+        // 根据id找到对应的position并移除
+        for (int i = 0; i < recipeList.size(); i++) {
+            if (pageType == PAGE_TYPE_HISTORY) {
+                if (recipeList.get(i).getHistoryId() == id) {
+                    selectedItems.remove(Integer.valueOf(i));
+                    break;
+                }
+            } else {
+                if (recipeList.get(i).getRecipeId() == id) {
+                    selectedItems.remove(Integer.valueOf(i));
+                    break;
+                }
             }
         }
     }
 
     public void clearSelection() {
+        selectedItems.clear();
         selectedIds.clear();
+        notifyDataSetChanged();
+    }
+
+    // 收藏页全选/取消全选
+    public void selectAllFavorite(boolean selectAll) {
+        if (selectAll) {
+            selectedItems.clear();
+            selectedIds.clear();
+            for (int i = 0; i < recipeList.size(); i++) {
+                selectedItems.add(i);
+                selectedIds.add(recipeList.get(i).getRecipeId());
+            }
+        } else {
+            selectedItems.clear();
+            selectedIds.clear();
+        }
+    }
+
+    // 历史页全选/取消全选
+    public void selectAllHistory(boolean selectAll) {
+        if (selectAll) {
+            selectedItems.clear();
+            selectedIds.clear();
+            for (int i = 0; i < recipeList.size(); i++) {
+                selectedItems.add(i);
+                selectedIds.add(recipeList.get(i).getHistoryId());
+            }
+        } else {
+            selectedItems.clear();
+            selectedIds.clear();
+        }
+    }
+
+    /**
+     * 更新单个菜谱的购物车状态
+     */
+    public void updateCartStatus(int recipeId, boolean inShoppingCart) {
+        for (int i = 0; i < recipeList.size(); i++) {
+            RecipeResponse recipe = recipeList.get(i);
+            if (recipe.getRecipeId() == recipeId) {
+                recipe.setInShoppingCart(inShoppingCart);
+                notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
+    /**
+     * 更新单个菜谱的收藏状态
+     */
+    public void updateFavoriteStatus(int recipeId, boolean isFavorite) {
+        for (int i = 0; i < recipeList.size(); i++) {
+            RecipeResponse recipe = recipeList.get(i);
+            if (recipe.getRecipeId() == recipeId) {
+                recipe.setFavorite(isFavorite);
+                notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
+    /**
+     * 批量检查购物车状态（可选）
+     */
+    public void checkCartStatusForAll() {
+        if (userId == -1) return;
+
+        for (RecipeResponse recipe : recipeList) {
+            checkCartStatusForSingleRecipe(recipe);
+        }
+    }
+
+    private void checkCartStatusForSingleRecipe(RecipeResponse recipe) {
+        Call<ApiResponse<Boolean>> call = apiService.checkIfInCart(userId, recipe.getRecipeId());
+        call.enqueue(new Callback<ApiResponse<Boolean>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Boolean> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
+                        boolean inCart = apiResponse.getData();
+                        updateCartStatus(recipe.getRecipeId(), inCart);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
+                Log.e("RecipeAdapter", "检查购物车状态失败: " + t.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 格式化原料字符串，移除JSON数组的括号和引号
+     * @param needs 原始原料字符串
+     * @return 格式化后的原料字符串
+     */
+    private String formatNeeds(String needs) {
+        if (needs == null || needs.isEmpty()) {
+            return "";
+        }
+
+        // 如果包含JSON数组的特征（以[开头，以]结尾）
+        if (needs.startsWith("[") && needs.endsWith("]")) {
+            // 移除首尾的方括号
+            String content = needs.substring(1, needs.length() - 1);
+
+            // 移除所有引号
+            content = content.replace("\"", "");
+
+            // 按逗号分割并重新组合
+            String[] ingredients = content.split(",");
+            StringBuilder formatted = new StringBuilder();
+
+            for (int i = 0; i < ingredients.length; i++) {
+                String ingredient = ingredients[i].trim();
+                if (!ingredient.isEmpty()) {
+                    formatted.append(ingredient);
+                    if (i < ingredients.length - 1) {
+                        formatted.append(", ");
+                    }
+                }
+            }
+
+            // 限制显示长度，避免过长
+            if (formatted.length() > 100) {
+                return formatted.substring(0, 97) + "...";
+            }
+
+            return formatted.toString();
+        }
+
+        // 如果不是JSON格式，直接返回
+        // 但可能还有引号，移除它们
+        String cleaned = needs.replace("\"", "");
+        cleaned = cleaned.replace("[", "").replace("]", "");
+
+        // 限制显示长度
+        if (cleaned.length() > 100) {
+            return cleaned.substring(0, 97) + "...";
+        }
+
+        return cleaned;
     }
 
     @NonNull
     @Override
-    public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.item_recipe, parent, false);
-        return new RecipeViewHolder(view);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RecipeResponse recipe = recipeList.get(position);
 
-        holder.tvRecipeName.setText(recipe.getName());
-
-        String attributes = String.format("%s · %s · %s · %s",
-                recipe.getTaste(), recipe.getMethod(), recipe.getTime(), recipe.getDifficulty());
-        holder.tvRecipeAttributes.setText(attributes);
-
-        // 关键修改：根据页面类型显示不同内容
-        if (pageType == PAGE_TYPE_HISTORY) {
-            // 历史记录页面：显示烹饪时间
-            String cookTimeText = formatCookTime(recipe.getCookTime());
-            holder.tvRecipeNeeds.setText(cookTimeText);
+        // 设置选择模式可见性 - 根据不同的页面类型调整
+        if (pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) {
+            holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
+            // 根据页面类型选择正确的ID
+            int targetId = (pageType == PAGE_TYPE_HISTORY) ? recipe.getHistoryId() : recipe.getRecipeId();
+            holder.cbSelect.setChecked(selectedIds.contains(targetId));
         } else {
-            // 普通页面：显示原材料
-            String formattedNeeds = formatNeeds(recipe.getNeeds());
-            holder.tvRecipeNeeds.setText(formattedNeeds);
+            holder.cbSelect.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
+            holder.cbSelect.setChecked(selectedItems.contains(position));
         }
 
-        // 图片加载（合并两部分的配置）
+        // 设置菜谱名称
+        holder.tvRecipeName.setText(recipe.getName());
+
+        // 设置菜谱属性：口味、方法、时间、难度
+        String attributes = String.format("%s | %s | %s | %s",
+                recipe.getTaste() != null ? recipe.getTaste() : "",
+                recipe.getMethod() != null ? recipe.getMethod() : "",
+                recipe.getTime() != null ? recipe.getTime() : "",
+                recipe.getDifficulty() != null ? recipe.getDifficulty() : "");
+        holder.tvRecipeAttributes.setText(attributes);
+
+        // 设置菜谱原料或烹饪时间
+        String displayText;
+        if (pageType == PAGE_TYPE_HISTORY && recipe.getCookTime() != null) {
+            displayText = "上次烹饪时间: " + recipe.getCookTime();
+        } else {
+            // 使用格式化后的原料字符串
+            String needs = recipe.getNeeds();
+            String formattedNeeds = formatNeeds(needs);
+            displayText = "原料: " + formattedNeeds;
+        }
+        holder.tvRecipeNeeds.setText(displayText);
+
+        // 设置菜谱图片 - 使用Glide优化
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
+            // 构造完整的图片URL
+            String fullImageUrl = recipe.getImageUrl();
+            if (!recipe.getImageUrl().startsWith("http")) {
+                // 如果是相对路径，添加基础URL
+                fullImageUrl = "http://10.0.2.2:8080" + (recipe.getImageUrl().startsWith("/") ? "" : "/") + recipe.getImageUrl();
+            }
+
+            // 使用Glide进行图片加载和缓存
             Glide.with(context)
-                    .load(recipe.getImageUrl())
+                    .load(fullImageUrl)
                     .placeholder(R.drawable.placeholder)
                     .error(R.drawable.placeholder)
-                    .thumbnail(0.25f) // 第二部分代码的优化
-                    .diskCacheStrategy(DiskCacheStrategy.ALL) // 第二部分代码的优化
-                    .skipMemoryCache(false) // 第二部分代码的优化
-                    .override(300, 300) // 第二部分代码的优化
-                    .centerCrop() // 第二部分代码的优化
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .centerCrop()
                     .into(holder.ivRecipeImage);
         } else {
             holder.ivRecipeImage.setImageResource(R.drawable.placeholder);
         }
 
-        // 正确显示收藏图标状态
-        boolean isFavorite = recipe.isFavorite();
-        Log.d("RecipeAdapter", "绑定菜谱ID: " + recipe.getRecipeId() + ", 收藏状态: " + isFavorite);
-
-        // 根据收藏状态设置图标
-        if (isFavorite) {
-            holder.ivFavorite.setImageResource(R.drawable.ic_favorite); // 实心收藏图标
+        // 设置收藏图标状态
+        if (recipe.isFavorite()) {
+            holder.ivFavorite.setImageResource(R.drawable.ic_favorite);
         } else {
-            holder.ivFavorite.setImageResource(R.drawable.ic_favorite_border); // 空心收藏图标
+            holder.ivFavorite.setImageResource(R.drawable.ic_favorite_border);
         }
 
-        // 设置收藏按钮点击事件
+        // 设置购物车图标状态 - 关键修改点：根据购物车状态显示不同图标
+        if (recipe.isInShoppingCart()) {
+            holder.ivCart.setImageResource(R.drawable.buylist_1); // 已加入购物车
+        } else {
+            holder.ivCart.setImageResource(R.drawable.buylist); // 未加入购物车
+        }
+
+        // 设置收藏图标点击事件
         holder.ivFavorite.setOnClickListener(v -> {
-            if (!isEditMode) {
-                // 点击时传递当前收藏状态，让外部处理反转逻辑
-                listener.onFavoriteClick(recipe.getRecipeId(), isFavorite);
+            if (listener != null) {
+                // 在编辑模式下，点击收藏图标不触发收藏/取消收藏
+                if ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode) {
+                    return;
+                }
+                listener.onFavoriteClick(recipe.getRecipeId(), recipe.isFavorite());
             }
         });
 
-        // 详情图标点击
-        holder.ivDetail.setOnClickListener(null);
-
-        // 编辑模式处理
-        holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
-        if (isEditMode) {
-            holder.cbSelect.setOnCheckedChangeListener(null);
-
-            // 选择逻辑
-            if (pageType == PAGE_TYPE_HISTORY) {
-                holder.cbSelect.setChecked(selectedIds.contains(recipe.getHistoryId()));
-                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (isChecked) {
-                        selectedIds.add(recipe.getHistoryId());
-                    } else {
-                        selectedIds.remove(recipe.getHistoryId());
-                    }
-                });
-            } else if (pageType == PAGE_TYPE_FAVORITE) {
-                holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
-                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (isChecked) {
-                        selectedIds.add(recipe.getRecipeId());
-                    } else {
-                        selectedIds.remove(recipe.getRecipeId());
-                    }
-                });
-            } else {
-                // 普通页面的选择逻辑
-                holder.cbSelect.setChecked(selectedIds.contains(recipe.getRecipeId()));
-                holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (isChecked) {
-                        selectedIds.add(recipe.getRecipeId());
-                    } else {
-                        selectedIds.remove(recipe.getRecipeId());
-                    }
-                });
+        // 设置购物车图标点击事件
+        holder.ivCart.setOnClickListener(v -> {
+            if (listener != null) {
+                // 在编辑模式下，点击购物车图标不触发操作
+                if ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode) {
+                    return;
+                }
+                listener.onCartClick(recipe.getRecipeId(), recipe.isInShoppingCart());
             }
-        }
+        });
 
+        // 设置整个项目的点击事件（用于查看详情）
         holder.overlayClickArea.setOnClickListener(v -> {
-            if (!isEditMode) {
-                // 排除点击了收藏按钮或详情图标的情况
-                if (!isPointInsideView(v, holder.ivFavorite, v.getX(), v.getY()) &&
-                        !isPointInsideView(v, holder.ivDetail, v.getX(), v.getY())) {
-                    Log.d("RecipeAdapter", "点击整个菜谱区域，recipeId = " + recipe.getRecipeId());
+            if (isSelectionMode || (pageType != PAGE_TYPE_NORMAL && isEditMode)) {
+                // 在选择模式或编辑模式下，点击切换选择状态
+                toggleSelection(position);
+            } else {
+                // 正常模式下，点击查看详情
+                if (listener != null) {
                     listener.onDetailClick(recipe.getRecipeId());
                 }
             }
         });
-    }
 
-    private boolean isPointInsideView(View containerView, View targetView, float x, float y) {
-        if (targetView.getVisibility() != View.VISIBLE) {
+        // 设置整个项目的长按事件（用于进入选择模式）
+        holder.overlayClickArea.setOnLongClickListener(v -> {
+            if (!isSelectionMode && pageType == PAGE_TYPE_NORMAL) {
+                isSelectionMode = true;
+                selectedItems.add(position);
+                notifyDataSetChanged();
+                return true;
+            }
             return false;
-        }
+        });
 
-        int[] location = new int[2];
-        targetView.getLocationOnScreen(location);
-
-        int left = location[0];
-        int top = location[1];
-        int right = left + targetView.getWidth();
-        int bottom = top + targetView.getHeight();
-
-        // 将屏幕坐标转换为容器视图内的相对坐标
-        int[] containerLocation = new int[2];
-        containerView.getLocationOnScreen(containerLocation);
-
-        float relativeX = x + containerLocation[0];
-        float relativeY = y + containerLocation[1];
-
-        return relativeX >= left && relativeX <= right &&
-                relativeY >= top && relativeY <= bottom;
+        // 设置复选框点击事件
+        holder.cbSelect.setOnClickListener(v -> {
+            toggleSelection(position);
+        });
     }
 
-    private String formatCookTime(String cookTime) {
-        if (TextUtils.isEmpty(cookTime)) {
-            return "暂无烹饪时间";
-        }
+    private void toggleSelection(int position) {
+        RecipeResponse recipe = recipeList.get(position);
 
-        // 方法1：直接截取前16个字符
-        if (cookTime.length() >= 16) {
-            // 确保格式是YYYY-MM-DD HH:MM:SS
-            // 截取YYYY-MM-DD HH:MM
-            return "上次烹饪：" + cookTime.substring(0, 16);
-        }
+        if (pageType == PAGE_TYPE_HISTORY || pageType == PAGE_TYPE_FAVORITE) {
+            // 对于历史页和收藏页，使用对应的ID
+            int targetId = (pageType == PAGE_TYPE_HISTORY) ? recipe.getHistoryId() : recipe.getRecipeId();
 
-        try {
-            // 尝试常见的日期格式
-            String[] formats = {
-                    "yyyy-MM-dd HH:mm:ss",
-                    "yyyy-MM-dd HH:mm:ss.SSS",
-                    "yyyy-MM-dd'T'HH:mm:ss",
-                    "yyyy-MM-dd'T'HH:mm:ss.SSS"
-            };
-
-            for (String format : formats) {
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.getDefault());
-                    Date date = sdf.parse(cookTime);
-                    if (date != null) {
-                        SimpleDateFormat output = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
-                        return "上次烹饪：" + output.format(date);
-                    }
-                } catch (ParseException e) {
-                    continue;
-                }
+            if (selectedIds.contains(targetId)) {
+                selectedIds.remove(targetId);
+                selectedItems.remove(Integer.valueOf(position));
+            } else {
+                selectedIds.add(targetId);
+                selectedItems.add(position);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // 如果都失败，返回原始值
-        return "上次烹饪：" + cookTime;
-    }
-
-    //提取原材料格式化逻辑
-    private String formatNeeds(String needs) {
-        String formattedNeeds = "未知原料";
-        if (needs != null && !needs.isEmpty()) {
-            try {
-                Gson gson = new Gson();
-                Type listType = new TypeToken<List<String>>(){}.getType();
-                List<String> ingredients = gson.fromJson(needs, listType);
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < ingredients.size(); i++) {
-                    sb.append(ingredients.get(i));
-                    if (i < ingredients.size() - 1) {
-                        sb.append("、");
-                    }
-                }
-                formattedNeeds = sb.toString();
-            } catch (Exception e) {
-                // 如果解析失败，尝试简单处理
-                formattedNeeds = needs
-                        .replace("[", "")
-                        .replace("]", "")
-                        .replace("\"", "")
-                        .replace(",", "、");
-            }
-
-            // 如果处理后的字符串过长，截断显示
-            if (formattedNeeds.length() > 50) {
-                formattedNeeds = formattedNeeds.substring(0, 50) + "...";
+        } else {
+            // 对于普通页，使用position
+            if (selectedItems.contains(position)) {
+                selectedItems.remove(Integer.valueOf(position));
+            } else {
+                selectedItems.add(position);
             }
         }
-        return formattedNeeds;
-    }
-
-    @Override
-    public void onViewRecycled(@NonNull RecipeViewHolder holder) {
-        super.onViewRecycled(holder);
-        Glide.with(context).clear(holder.ivRecipeImage);
-        holder.itemView.setTag(null);
+        notifyItemChanged(position);
     }
 
     @Override
@@ -390,32 +448,66 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
         return recipeList.size();
     }
 
-    // ViewHolder类
-    public static class RecipeViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        CheckBox cbSelect;
         ImageView ivRecipeImage;
         TextView tvRecipeName;
         TextView tvRecipeAttributes;
         TextView tvRecipeNeeds;
         ImageView ivFavorite;
-        ImageView ivDetail;
-        CheckBox cbSelect;
+        ImageView ivCart;
         View overlayClickArea;
 
-        public RecipeViewHolder(@NonNull View itemView) {
+        public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            cbSelect = itemView.findViewById(R.id.cb_select);
             ivRecipeImage = itemView.findViewById(R.id.iv_recipe_image);
             tvRecipeName = itemView.findViewById(R.id.tv_recipe_name);
             tvRecipeAttributes = itemView.findViewById(R.id.tv_recipe_attributes);
             tvRecipeNeeds = itemView.findViewById(R.id.tv_recipe_needs);
             ivFavorite = itemView.findViewById(R.id.iv_favorite);
-            ivDetail = itemView.findViewById(R.id.iv_detail);
-            cbSelect = itemView.findViewById(R.id.cb_select);
+            ivCart = itemView.findViewById(R.id.iv_buy);
             overlayClickArea = itemView.findViewById(R.id.overlay_click_area);
         }
     }
 
-    // 获取食谱列表
-    public List<RecipeResponse> getRecipes() {
-        return recipeList;
+    // 图片加载辅助方法
+    private void loadImageAsync(String imageUrl, ImageView imageView) {
+        new AsyncTask<String, Void, Bitmap>() {
+            @Override
+            protected Bitmap doInBackground(String... urls) {
+                try {
+                    // 构造完整URL
+                    String fullUrl = urls[0];
+                    if (!fullUrl.startsWith("http")) {
+                        fullUrl = "http://10.0.2.2:8080" + (fullUrl.startsWith("/") ? "" : "/") + fullUrl;
+                    }
+
+                    URL url = new URL(fullUrl);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setDoInput(true);
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(5000);
+                    connection.connect();
+
+                    if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        InputStream input = connection.getInputStream();
+                        return BitmapFactory.decodeStream(input);
+                    }
+                } catch (Exception e) {
+                    Log.e("RecipeAdapter", "Error loading image: " + e.getMessage());
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Bitmap bitmap) {
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap);
+                } else {
+                    imageView.setImageResource(R.drawable.placeholder);
+                }
+            }
+        }.execute(imageUrl);
     }
 }

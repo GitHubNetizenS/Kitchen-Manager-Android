@@ -22,7 +22,10 @@ import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,7 +42,7 @@ public class FavoriteActivity extends AppCompatActivity {
     private Button btnSortTime, btnSortMatch;
     private ImageView ivBack;
     private TextView tvEdit, tvSelectAll, tvCancel, tvDelete;
-    private int userId = -1; // 不再硬编码，从SharedPreferences获取
+    private int userId = -1;
     private ApiService apiService;
     private SharedPreferences prefs;
     private boolean isEditMode = false;
@@ -91,7 +94,7 @@ public class FavoriteActivity extends AppCompatActivity {
         btnSortMatch.setOnClickListener(v -> {
             updateButtonState(false);
             isTimeSort = false;
-            loadFavoriteRecipes(false); // false 表示按匹配值排序
+            loadFavoriteRecipes(false);
         });
 
         tvEdit.setOnClickListener(v -> enterEditMode());
@@ -110,20 +113,32 @@ public class FavoriteActivity extends AppCompatActivity {
         adapter = new RecipeAdapter(this, new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
             public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
-                if (!isEditMode) {
-                    // 在收藏页面，菜谱肯定是已收藏状态
-                    // 点击收藏图标就是取消收藏
-                    unfavoriteRecipe(recipeId);
-                }
+                // 实现取消收藏逻辑
+                unfavoriteRecipe(recipeId);
             }
 
             @Override
             public void onDetailClick(int recipeId) {
-                if (!isEditMode) {
-                    showRecipeDetail(recipeId);
+                // 实现查看详情逻辑
+                showRecipeDetail(recipeId);
+            }
+
+            @Override
+            public void onCartClick(int recipeId, boolean isCurrentlyInCart) {
+                if (userId == -1) {
+                    Toast.makeText(FavoriteActivity.this, "请先登录", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (isCurrentlyInCart) {
+                    // 实现从购物车移除逻辑
+                    removeFromCart(recipeId);
+                } else {
+                    // 实现加入购物车逻辑
+                    addToCart(recipeId);
                 }
             }
-        }, RecipeAdapter.PAGE_TYPE_FAVORITE); // 添加页面类型参数
+        }, RecipeAdapter.PAGE_TYPE_FAVORITE);
         rvRecipes.setAdapter(adapter);
 
         // 默认加载按时间排序
@@ -191,7 +206,13 @@ public class FavoriteActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                Toast.makeText(FavoriteActivity.this, "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                String errorMsg = "网络错误: " + t.getMessage();
+                if (t instanceof SocketTimeoutException) {
+                    errorMsg = "请求超时，请检查网络";
+                } else if (t instanceof ConnectException) {
+                    errorMsg = "无法连接到服务器";
+                }
+                Toast.makeText(FavoriteActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
                 checkIfAllDeleted();
             }
         });
@@ -225,6 +246,94 @@ public class FavoriteActivity extends AppCompatActivity {
         if (recipes.isEmpty()) {
             emptyView.setVisibility(View.VISIBLE);
             rvRecipes.setVisibility(View.GONE);
+        }
+    }
+
+    // 加入购物车
+    private void addToCart(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.addToCart(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call,
+                                   Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+
+                    if (apiResponse.getCode() == 200) {
+                        // 加入购物车成功，更新本地状态
+                        updateLocalCartStatus(recipeId, true);
+                        Toast.makeText(FavoriteActivity.this, "已加入购物车", Toast.LENGTH_SHORT).show();
+                    } else if (apiResponse.getCode() == 409) {
+                        // 重复添加
+                        updateLocalCartStatus(recipeId, true);
+                        Toast.makeText(FavoriteActivity.this, "已在购物车中", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(FavoriteActivity.this, "加入购物车失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(FavoriteActivity.this, "加入购物车失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                String errorMsg = "网络错误: " + t.getMessage();
+                if (t instanceof SocketTimeoutException) {
+                    errorMsg = "请求超时，请检查网络";
+                } else if (t instanceof ConnectException) {
+                    errorMsg = "无法连接到服务器";
+                }
+                Toast.makeText(FavoriteActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // 从购物车移除
+    private void removeFromCart(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.removeFromCart(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call,
+                                   Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+
+                    if (apiResponse.getCode() == 200) {
+                        // 移除成功，更新本地状态
+                        updateLocalCartStatus(recipeId, false);
+                        Toast.makeText(FavoriteActivity.this, "已从购物车移除", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(FavoriteActivity.this, "移除失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(FavoriteActivity.this, "移除失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                String errorMsg = "网络错误: " + t.getMessage();
+                if (t instanceof SocketTimeoutException) {
+                    errorMsg = "请求超时，请检查网络";
+                } else if (t instanceof ConnectException) {
+                    errorMsg = "无法连接到服务器";
+                }
+                Toast.makeText(FavoriteActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // 更新本地购物车状态
+    private void updateLocalCartStatus(int recipeId, boolean inShoppingCart) {
+        List<RecipeResponse> recipes = adapter.getRecipes();
+        for (int i = 0; i < recipes.size(); i++) {
+            RecipeResponse recipe = recipes.get(i);
+            if (recipe.getRecipeId() == recipeId) {
+                recipe.setInShoppingCart(inShoppingCart);
+                adapter.notifyItemChanged(i);
+                Log.d("FavoriteActivity", "更新购物车状态: recipeId=" + recipeId + ", inShoppingCart=" + inShoppingCart);
+                break;
+            }
         }
     }
 
@@ -279,11 +388,15 @@ public class FavoriteActivity extends AppCompatActivity {
                         List<RecipeResponse> recipes = apiResponse.getData();
                         if (recipes != null && !recipes.isEmpty()) {
                             for (RecipeResponse recipe : recipes) {
-                                recipe.setFavorite(true); // 强制设置为已收藏
-                                Log.d("FavoriteActivity", "菜谱ID: " + recipe.getRecipeId() + ", 名称: " + recipe.getName());
+                                recipe.setFavorite(true);
                             }
+
                             adapter.setRecipes(recipes);
                             rvRecipes.setVisibility(View.VISIBLE);
+                            emptyView.setVisibility(View.GONE);
+
+                            // 然后异步检查购物车状态
+                            checkCartStatusForRecipes(recipes);
                         } else {
                             emptyView.setText("暂无收藏内容");
                             emptyView.setVisibility(View.VISIBLE);
@@ -307,6 +420,51 @@ public class FavoriteActivity extends AppCompatActivity {
                 String errorMsg = "网络错误: " + t.getMessage();
                 showError(errorMsg);
                 Log.e("FavoriteActivity", errorMsg, t);
+            }
+        });
+    }
+
+
+    /**
+     * 检查菜谱的购物车状态
+     */
+    private void checkCartStatusForRecipes(List<RecipeResponse> recipes) {
+        if (userId == -1) return;
+
+        for (RecipeResponse recipe : recipes) {
+            checkSingleCartStatus(recipe);
+        }
+    }
+
+    /**
+     * 检查单个菜谱的购物车状态
+     */
+    private void checkSingleCartStatus(RecipeResponse recipe) {
+        Call<ApiResponse<Boolean>> call = apiService.checkIfInCart(userId, recipe.getRecipeId());
+        call.enqueue(new Callback<ApiResponse<Boolean>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Boolean> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
+                        boolean inCart = apiResponse.getData();
+                        recipe.setInShoppingCart(inCart);
+
+                        // 更新对应位置的UI
+                        List<RecipeResponse> adapterRecipes = adapter.getRecipes();
+                        for (int i = 0; i < adapterRecipes.size(); i++) {
+                            if (adapterRecipes.get(i).getRecipeId() == recipe.getRecipeId()) {
+                                adapter.notifyItemChanged(i);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
+                Log.e("FavoriteActivity", "检查购物车状态失败: " + t.getMessage());
             }
         });
     }

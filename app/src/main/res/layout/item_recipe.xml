@@ -93,12 +93,12 @@
 
                 <!-- 购买图标 -->
                 <ImageView
-                    android:id="@+id/iv_detail"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:id="@+id/iv_buy"
+                    android:layout_width="match_parent"
+                    android:layout_height="31dp"
                     android:layout_marginTop="8dp"
                     android:contentDescription="购物车"
-                    android:src="@drawable/bylist" />
+                    android:src="@drawable/buylist" />
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
