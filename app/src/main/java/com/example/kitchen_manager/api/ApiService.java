@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://192.168.43.193:8082/";
+    String BASE_URL = "http://10.68.171.35:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -229,5 +229,50 @@ public interface ApiService {
             @Query("recipe_id") int recipeId
     );
 
+    @GET("api/cart/recipes")
+    Call<ApiResponse<List<Integer>>> getCartRecipes(
+            @Query("user_id") int userId
+    );
+
+    @GET("api/recipelist/withcart")
+    Call<ApiResponse<Map<String, Object>>> getRecipeListWithCartStatus(
+            @Query("tag_id") int tagId,
+            @Query("page") int page,
+            @Query("page_size") int pageSize,
+            @Query("user_id") int userId
+    );
+
+    // 搜索接口也需要支持购物车状态
+    @GET("api/search/withcart")
+    Call<ApiResponse<List<RecipeResponse>>> searchRecipesWithCartStatus(
+            @Query("keyword") String keyword,
+            @Query("sort") String sortType,
+            @Query("user_id") int userId
+    );
+
+    // 删除菜谱从购物车
+    @POST("api/cart/delete-recipe")
+    Call<ApiResponse<Void>> deleteRecipeFromCart(
+            @Query("user_id") int userId,
+            @Query("recipe_id") int recipeId
+    );
+
+    // 正确：应该调用返回详细信息的接口
+    @GET("api/cart/shopping-recipes")
+    Call<ApiResponse<List<Map<String, Object>>>> getShoppingCartRecipes(
+            @Query("user_id") int userId
+    );
+
+    /**
+     * 更新菜谱所有食材的购买状态
+     * POST /api/cart/update-all-status
+     */
+    @POST("cart/update-all-status")
+    @FormUrlEncoded
+    Call<ApiResponse<Void>> updateAllCartIngredientsStatus(
+            @Field("user_id") int userId,
+            @Field("recipe_id") int recipeId,
+            @Field("status") String status
+    );
 
 }

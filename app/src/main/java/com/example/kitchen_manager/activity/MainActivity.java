@@ -239,4 +239,11 @@ public class MainActivity extends AppCompatActivity {
 
         isToBuyFragmentShowing = false;
     }
+
+    // 新增：关闭侧边栏并跳转到推荐页面
+    public void closeDrawerAndNavigateToRecommend() {
+        if (drawerLayout.isDrawerOpen(navigationView)) {
+            drawerLayout.closeDrawer(navigationView);
+        }
+    }
 }

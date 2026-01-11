@@ -79,26 +79,49 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="#F8F8F8"
-                android:padding="8dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
+                android:layout_marginBottom="4dp"
                 android:layout_marginTop="4dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="所需食材:"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="8dp"/>
+                <!-- 下拉框标题，可点击展开/收起 -->
 
                 <!-- 食材列表的RecyclerView -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rv_ingredients"
+                <LinearLayout
+                    android:id="@+id/expandable_header"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"/>
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:layout_weight="9"
+                        android:text="所需食材:"
+                        android:textColor="#333333"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/iv_expand_icon"
+                        android:layout_width="1dp"
+                        android:layout_height="16dp"
+                        android:layout_weight="1"
+                        android:src="@drawable/ic_expand_more"
+                        app:tint="#666666" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_ingredients"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="8dp"
+                        android:visibility="gone"
+                        android:nestedScrollingEnabled="false"/>
             </LinearLayout>
 
         </LinearLayout>
