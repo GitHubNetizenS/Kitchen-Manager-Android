@@ -1,7 +1,9 @@
 package com.example.kitchen_manager.activity;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,6 +24,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 
 import com.bumptech.glide.Glide;
 import com.example.kitchen_manager.R;
@@ -31,6 +34,7 @@ import com.example.kitchen_manager.models.Ingredient;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.IngredientResponse;
 import com.example.kitchen_manager.response.RecipeDetailResponse;
+import com.example.kitchen_manager.response.RecipeVideoResponse;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -54,15 +58,18 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private TextView recipeAttributes;
     private TextView recipeIngredientsText;
     private TextView recipeSteps;
-    private TextView ingredientComparationText; // 新增：食材比对文本
+    private TextView ingredientComparationText;
     private ProgressBar progressBar;
     private List<Ingredient> recipeIngredientsList;
     private AlertDialog depletionDialog;
     private AlertDialog selectionDialog;
     private ImageView ivBack;
     private List<CheckBox> ingredientCheckboxes = new ArrayList<>();
-    // 新增：存储用户已有食材
     private List<IngredientResponse> userIngredients = new ArrayList<>();
+
+    // 新增：视频相关组件
+    private CardView videoCard;
+    private TextView videoLink;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,23 +94,84 @@ public class RecipeDetailActivity extends AppCompatActivity {
         recipeAttributes = findViewById(R.id.recipe_attributes);
         recipeIngredientsText = findViewById(R.id.recipe_ingredients);
         recipeSteps = findViewById(R.id.recipe_steps);
-        ingredientComparationText = findViewById(R.id.ingredient_comparation); // 初始化新组件
+        ingredientComparationText = findViewById(R.id.ingredient_comparation);
         progressBar = findViewById(R.id.progressBar);
         ivBack = findViewById(R.id.iv_back);
 
-        ivBack.setOnClickListener(v -> {
-            finish(); // 结束当前Activity，返回上一页面
-        });
+        // 新增：初始化视频组件
+        videoCard = findViewById(R.id.video_card);
+        videoLink = findViewById(R.id.video_link);
+
+        ivBack.setOnClickListener(v -> finish());
+
         initDialogs();
         loadRecipeDetail();
 
-        // 如果用户已登录，加载用户食材
         if (userId != 0) {
             loadUserIngredients();
         }
+
+        // 新增：加载视频信息
+        loadRecipeVideo();
     }
 
-    // 新增方法：加载用户已有食材
+    // 新增方法：加载菜谱视频
+    private void loadRecipeVideo() {
+        ApiService apiService = ApiClient.getApiService();
+        Call<ApiResponse<List<RecipeVideoResponse>>> call = apiService.getRecipeVideos(recipeId);
+
+        call.enqueue(new Callback<ApiResponse<List<RecipeVideoResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RecipeVideoResponse>>> call,
+                                   Response<ApiResponse<List<RecipeVideoResponse>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<RecipeVideoResponse>> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null
+                            && !apiResponse.getData().isEmpty()) {
+                        // 获取第一个视频（根据你的需求，一个菜谱只有一个视频）
+                        RecipeVideoResponse video = apiResponse.getData().get(0);
+                        displayVideoLink(video);
+                    } else {
+                        Log.d("RecipeVideo", "该菜谱没有关联视频");
+                    }
+                } else {
+                    Log.e("RecipeVideo", "加载视频失败: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<RecipeVideoResponse>>> call, Throwable t) {
+                Log.e("RecipeVideo", "网络错误: " + t.getMessage());
+            }
+        });
+    }
+
+    // 新增方法：显示视频链接
+    private void displayVideoLink(RecipeVideoResponse video) {
+        if (video != null && video.getVideoUrl() != null && !video.getVideoUrl().isEmpty()) {
+            videoCard.setVisibility(View.VISIBLE);
+
+            // 设置视频标题（如果需要显示平台信息）
+            String linkText = "点击观看视频教程";
+            if (video.getPlatform() != null) {
+                linkText = "点击观看 " + video.getPlatform() + " 视频教程";
+            }
+            videoLink.setText(linkText);
+
+            // 设置点击事件，跳转到浏览器
+            videoLink.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(video.getVideoUrl()));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(RecipeDetailActivity.this,
+                            "无法打开视频链接", Toast.LENGTH_SHORT).show();
+                    Log.e("VideoLink", "打开链接失败: " + e.getMessage());
+                }
+            });
+        }
+    }
+
     private void loadUserIngredients() {
         ApiService apiService = ApiClient.getApiService();
         Call<ApiResponse<List<IngredientResponse>>> call = apiService.getUserIngredients(userId);
@@ -117,8 +185,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
                         userIngredients = apiResponse.getData();
                         Log.d("UserIngredients", "加载用户食材成功，数量: " + userIngredients.size());
-
-                        // 重新加载菜谱详情以更新比对显示
                         loadRecipeIngredientsForComparation();
                     }
                 } else {
@@ -133,7 +199,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
     }
 
-    // 新增方法：加载菜谱关联的食材库食材
     private void loadRecipeIngredientsForComparation() {
         ApiService apiService = ApiClient.getApiService();
         Call<ApiResponse<List<Ingredient>>> call = apiService.getRecipeIngredients(recipeId);
@@ -147,8 +212,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
                         List<Ingredient> recipeStandardIngredients = apiResponse.getData();
                         Log.d("RecipeIngredients", "加载菜谱食材成功，数量: " + recipeStandardIngredients.size());
-
-                        // 更新食材比对显示
                         updateIngredientComparation(recipeStandardIngredients);
                     }
                 } else {
@@ -163,55 +226,45 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
     }
 
-    // 新增方法：更新食材比对显示
-    // 修改 updateIngredientComparation 方法
     private void updateIngredientComparation(List<Ingredient> recipeStandardIngredients) {
         if (recipeStandardIngredients == null || recipeStandardIngredients.isEmpty()) {
             ingredientComparationText.setText("暂无食材信息");
             return;
         }
 
-        // 创建用户已有食材名称集合，便于快速查找
         Set<String> userIngredientNames = new HashSet<>();
         for (IngredientResponse userIngredient : userIngredients) {
             userIngredientNames.add(userIngredient.getName());
         }
 
-        // 使用 SpannableStringBuilder 构建带有颜色的文本
         SpannableStringBuilder builder = new SpannableStringBuilder();
 
         for (int i = 0; i < recipeStandardIngredients.size(); i++) {
             Ingredient ingredient = recipeStandardIngredients.get(i);
             String ingredientName = ingredient.getName();
 
-            // 添加换行符（除了第一个）
             if (i > 0) {
                 builder.append("\n");
             }
 
-            // 添加食材名称
             String itemText = "· " + ingredientName;
             int start = builder.length();
             builder.append(itemText);
             int end = builder.length();
 
-            // 设置颜色：绿色表示用户已有，红色表示用户没有
             int color;
             if (userIngredientNames.contains(ingredientName)) {
-                color = Color.parseColor("#4CAF50"); // 绿色
+                color = Color.parseColor("#4CAF50");
             } else {
-                color = Color.parseColor("#F44336"); // 红色
+                color = Color.parseColor("#F44336");
             }
 
-            // 应用颜色到这段文本
             builder.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
-        // 设置文本到TextView
         ingredientComparationText.setText(builder);
     }
 
-    // 修改原有的displayRecipe方法，在显示菜谱详情时也加载食材比对
     private void displayRecipe(RecipeDetailResponse recipe) {
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
             Glide.with(this)
@@ -232,7 +285,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 recipe.getDifficulty() != null ? recipe.getDifficulty() : "未知");
         recipeAttributes.setText(attributes);
 
-        // 显示菜谱原料
         StringBuilder formattedNeeds = new StringBuilder("");
         if (recipe.getNeeds() != null && !recipe.getNeeds().isEmpty()) {
             try {
@@ -277,18 +329,16 @@ public class RecipeDetailActivity extends AppCompatActivity {
         }
         recipeSteps.setText(formattedSteps.toString());
 
-        // 加载食材库比对信息
         if (userId != 0) {
-            // 如果用户已登录，确保用户食材已加载
             if (!userIngredients.isEmpty()) {
                 loadRecipeIngredientsForComparation();
             }
         } else {
-            // 用户未登录，显示提示
             ingredientComparationText.setText("请登录后查看食材比对");
             ingredientComparationText.setTextColor(Color.parseColor("#777777"));
         }
     }
+
     private void initDialogs() {
         View depletionView = LayoutInflater.from(this).inflate(R.layout.dialog_ingredient_depletion, null);
         depletionDialog = new AlertDialog.Builder(this)
@@ -308,13 +358,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
             depletionDialog.dismiss();
             addUserHistory();
         });
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // 关闭所有对话框
         if (depletionDialog != null && depletionDialog.isShowing()) {
             depletionDialog.dismiss();
         }
@@ -356,7 +404,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                         recipeIngredientsList = apiResponse.getData();
                         Log.d("API", "获取到食材数量: " + recipeIngredientsList.size());
 
-                        // 添加小延迟确保UI准备就绪
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             showIngredientSelectionDialog();
                         }, 100);
@@ -384,7 +431,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void showIngredientSelectionDialog() {
         Log.d("Dialog", "显示食材选择对话框");
-        //关闭可能存在的旧对话框
         if (selectionDialog != null && selectionDialog.isShowing()) {
             selectionDialog.dismiss();
         }
@@ -417,7 +463,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
             container.addView(itemView);
         }
 
-        // 创建新对话框
         AlertDialog newSelectionDialog = new AlertDialog.Builder(this)
                 .setView(dialogView)
                 .setCancelable(false)
@@ -425,7 +470,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
-        ivBack.setOnClickListener(v -> finish());
 
         btnConfirm.setOnClickListener(v -> {
             Log.d("Dialog", "确认按钮被点击");
@@ -440,7 +484,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
 
         newSelectionDialog.show();
-        selectionDialog = newSelectionDialog; // 更新引用
+        selectionDialog = newSelectionDialog;
     }
 
     private void deleteSelectedIngredients() {
@@ -458,18 +502,15 @@ public class RecipeDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // 将List转换为JSON字符串
         Gson gson = new Gson();
         String ingredientIdsJson = gson.toJson(selectedIds);
         Log.d("Delete", "删除的食材JSON: " + ingredientIdsJson);
 
-        // 禁用按钮防止多次点击
         Button btnConfirm = selectionDialog.findViewById(R.id.btnConfirm);
         Button btnCancel = selectionDialog.findViewById(R.id.btnCancel);
         if (btnConfirm != null) btnConfirm.setEnabled(false);
         if (btnCancel != null) btnCancel.setEnabled(false);
 
-        // 显示进度条
         progressBar.setVisibility(View.VISIBLE);
 
         ApiService apiService = ApiClient.getApiService();
@@ -481,7 +522,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 Log.d("Delete", "收到删除响应");
 
-                // 重新启用按钮
                 if (btnConfirm != null) btnConfirm.setEnabled(true);
                 if (btnCancel != null) btnCancel.setEnabled(true);
 
@@ -508,7 +548,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 Log.e("Delete", "删除请求失败", t);
 
-                // 重新启用按钮
                 if (btnConfirm != null) btnConfirm.setEnabled(true);
                 if (btnCancel != null) btnCancel.setEnabled(true);
 
@@ -525,7 +564,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         ApiService apiService = ApiClient.getApiService();
 
-        // 先增加热度
         Call<ApiResponse<Void>> popularityCall = apiService.incrementPopularity(recipeId);
         popularityCall.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
@@ -574,7 +612,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
     }
 
-
     private void showError(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
@@ -609,6 +646,4 @@ public class RecipeDetailActivity extends AppCompatActivity {
             }
         });
     }
-
-
 }
