@@ -37,8 +37,11 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -60,16 +63,25 @@ public class RecommendFragment extends Fragment {
     private int currentPage = 1;
     private boolean isLoading = false;
     private boolean hasMore = true;
-    private int pageSize = 20;
+    private final int pageSize = 20;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Map<String, Integer> tapMap = new HashMap<>();    // 分类映射。
+    private long currentRequestId = 0;                              // 当前请求标识，用于避免数据错乱。
+    private int currentTagId = 0;   // 当前选择分类对应的ID。
+    private int requestTagId = 0;   // 当前请求对应的分类ID（用于避免旧请求覆盖新数据）。
+    private static final int PRELOAD_THRESHOLD = 5;       // 离底部多少条数据触发预加载。
+    private int requestGeneration = 0;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_recommend, container, false);
 
-        // 获取SharedPreferences
-        SharedPreferences prefs = requireContext().getSharedPreferences("user_session", Context.MODE_PRIVATE);
+        SharedPreferences prefs =
+                requireContext().getSharedPreferences("user_session", Context.MODE_PRIVATE);
         userId = prefs.getInt("user_id", -1);
 
         apiService = ApiClient.getApiService();
@@ -92,10 +104,10 @@ public class RecommendFragment extends Fragment {
         updateButtonState(btnAll);
 
         View.OnClickListener categoryClickListener = v -> {
-            Button clickedButton = (Button) v;
-            String tag = buttonTagMap.get(clickedButton);
+            Button clicked = (Button) v;
+            String tag = buttonTagMap.get(clicked);
             loadRecipesByTag(tag);
-            updateButtonState(clickedButton);
+            updateButtonState(clicked);
         };
 
         btnAll.setOnClickListener(categoryClickListener);
@@ -103,101 +115,63 @@ public class RecommendFragment extends Fragment {
         btnOther.setOnClickListener(categoryClickListener);
         btnSnack.setOnClickListener(categoryClickListener);
 
-        rvRecipes.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 1);
+        rvRecipes.setLayoutManager(layoutManager);
 
-        // 添加优化配置
         rvRecipes.setHasFixedSize(true);
-        rvRecipes.setItemViewCacheSize(20);
-        rvRecipes.setDrawingCacheEnabled(true);
-        rvRecipes.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
 
-        if (rvRecipes.getItemAnimator() != null) {
-            rvRecipes.getItemAnimator().setAddDuration(0);
-            rvRecipes.getItemAnimator().setRemoveDuration(0);
-            rvRecipes.getItemAnimator().setChangeDuration(0);
-        }
+        adapter = new RecipeAdapter(
+                getContext(),
+                new ArrayList<>(),
+                new RecipeAdapter.OnItemClickListener() {
+                    @Override
+                    public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
+                        if (userId == -1) {
+                            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (isCurrentlyFavorite) {
+                            unfavoriteRecipe(recipeId);
+                        } else {
+                            favoriteRecipe(recipeId);
+                        }
+                    }
 
-        // 创建适配器 - 修改：使用正确的页面类型
-        adapter = new RecipeAdapter(getContext(), new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
-            @Override
-            public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
-                if (userId == -1) {
-                    Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+                    @Override
+                    public void onDetailClick(int recipeId) {
+                        showRecipeDetail(recipeId);
+                    }
 
-                // 根据当前状态决定是收藏还是取消收藏
-                if (isCurrentlyFavorite) {
-                    unfavoriteRecipe(recipeId);
-                } else {
-                    favoriteRecipe(recipeId);
-                }
-            }
+                    @Override
+                    public void onCartClick(int recipeId, boolean isCurrentlyInCart) {
+                        if (userId == -1) {
+                            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        toggleCart(recipeId);
+                    }
+                },
+                RecipeAdapter.PAGE_TYPE_NORMAL
+        );
 
-            @Override
-            public void onDetailClick(int recipeId) {
-                showRecipeDetail(recipeId);
-            }
-
-            @Override
-            public void onCartClick(int recipeId, boolean isCurrentlyInCart) {
-                if (userId == -1) {
-                    Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // 无论当前状态如何，都调用切换接口
-                toggleCart(recipeId);
-            }
-        }, RecipeAdapter.PAGE_TYPE_NORMAL);
         rvRecipes.setAdapter(adapter);
 
-
-
-        // 设置滚动监听
         rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            private static final int VISIBLE_THRESHOLD = 5;
-            private static final int MAX_LOAD_PAGES = 5;
-            private static final int ITEM_THRESHOLD = 100;
-
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
+                if (dy <= 0 || isLoading || !hasMore) return;
 
-                GridLayoutManager layoutManager = (GridLayoutManager) recyclerView.getLayoutManager();
-                if (layoutManager == null || !hasMore || isLoading) return;
+                int lastVisible =
+                        layoutManager.findLastVisibleItemPosition();
+                int total = layoutManager.getItemCount();
 
-                int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
-                int totalItemCount = layoutManager.getItemCount();
-
-                if (lastVisibleItemPosition >= totalItemCount - VISIBLE_THRESHOLD
-                        && currentPage <= MAX_LOAD_PAGES
-                        && totalItemCount < ITEM_THRESHOLD) {
-                    Log.d("RecommendFragment", "触发预加载: page=" + currentPage);
-                    loadRecipes(currentPage);
-                }
-            }
-
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                Context context = getContext();
-                if (context == null) return;
-
-                // 滑动时暂停Glide加载，停止时恢复
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING ||
-                        newState == RecyclerView.SCROLL_STATE_SETTLING) {
-                    Glide.with(context).pauseRequests();
-                } else if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    Glide.with(context).resumeRequests();
+                if (lastVisible >= total - PRELOAD_THRESHOLD) {
+                    loadRecipes(currentPage, currentTagId, requestGeneration);
                 }
             }
         });
 
-        // 加载初始数据
         loadRecipesByTag(currentTag);
-
         return view;
     }
 
@@ -206,132 +180,90 @@ public class RecommendFragment extends Fragment {
      */
     private void loadRecipesByTag(String tag) {
         currentTag = tag;
-        currentPage = 1;  // 重置到第一页
+        currentTagId = tagMap.getOrDefault(tag, 0);
+
+        currentPage = 1;
         hasMore = true;
+        isLoading = false;
+
+        requestGeneration++;
+        int myGeneration = requestGeneration;
 
         progressBar.setVisibility(View.VISIBLE);
         emptyView.setVisibility(View.GONE);
         rvRecipes.setVisibility(View.GONE);
 
-        loadRecipes(currentPage);
+        loadRecipes(currentPage, currentTagId, myGeneration);
     }
 
     /**
      * 加载指定页码的菜谱数据
      */
-    private void loadRecipes(int page) {
+    private void loadRecipes(int page, int tagId, int generation) {
         if (isLoading || !hasMore) return;
 
         isLoading = true;
-        if (page == 1) {
-            requireActivity().runOnUiThread(() -> progressBar.setVisibility(View.VISIBLE));
-        }
-        int tagId = tagMap.get(currentTag);
+        if (page == 1) progressBar.setVisibility(View.VISIBLE);
 
-        Log.d("RecommendFragment", "请求参数: tagId=" + tagId + ", page=" + page + ", pageSize=" + pageSize + ", userId=" + userId);
-
-        // 确保 userId 有效
         int effectiveUserId = userId != -1 ? userId : 0;
 
-        Call<ApiResponse<Map<String, Object>>> call = apiService.getRecipeList(
-                tagId, page, pageSize, effectiveUserId);
+        apiService.getRecipeList(tagId, page, pageSize, effectiveUserId)
+                .enqueue(new Callback<>() {
 
-        call.enqueue(new Callback<ApiResponse<Map<String, Object>>>() {
-                         @Override
-                         public void onResponse(Call<ApiResponse<Map<String, Object>>> call,
-                                                Response<ApiResponse<Map<String, Object>>> response)  {
-                isLoading = false;
-                requireActivity().runOnUiThread(() -> progressBar.setVisibility(View.GONE));
+                    @Override
+                    public void onResponse(Call<ApiResponse<Map<String, Object>>> call,
+                                           Response<ApiResponse<Map<String, Object>>> response) {
 
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Map<String, Object>> apiResponse = response.body();
+                        if (generation != requestGeneration) return;
 
-                    Log.d("RecommendFragment", "响应码: " + apiResponse.getCode());
-                    Log.d("RecommendFragment", "响应消息: " + apiResponse.getMessage());
+                        isLoading = false;
+                        progressBar.setVisibility(View.GONE);
 
-                    if (apiResponse.getCode() == 200) {
-                        Map<String, Object> data = apiResponse.getData();
-
-                        if (data == null) {
-                            Log.e("RecommendFragment", "数据为空");
-                            showError("数据为空");
+                        if (!response.isSuccessful() || response.body() == null) {
+                            hasMore = false;
                             return;
                         }
 
-                        // 解析菜谱数据
-                        List<RecipeResponse> recipes = parseRecipesFromData(data);
-                        int totalPages = getTotalPagesFromData(data);
+                        List<RecipeResponse> recipes =
+                                parseRecipesFromData(response.body().getData());
+                        int totalPages =
+                                getTotalPagesFromData(response.body().getData());
 
-                        if (recipes != null && !recipes.isEmpty()) {
-                            Log.d("RecommendFragment", "成功解析 " + recipes.size() + " 条菜谱数据");
-                            // 打印每条菜谱的收藏状态
-                            for (RecipeResponse recipe : recipes) {
-                                Log.d("RecommendFragment", "菜谱ID: " + recipe.getRecipeId() + ", 收藏状态: " + recipe.isFavorite());
-                            }
-
-                            // 在主线程中更新UI
-                            List<RecipeResponse> finalRecipes = recipes;
-                            requireActivity().runOnUiThread(() -> {
-                                if (currentPage == 1) {
-                                    // 第一页：直接设置新数据
-                                    adapter.setRecipes(new ArrayList<>(finalRecipes));
-                                } else {
-                                    // 加载更多：创建新的列表
-                                    List<RecipeResponse> currentRecipes = new ArrayList<>(adapter.getRecipes());
-                                    currentRecipes.addAll(finalRecipes);
-                                    adapter.setRecipes(currentRecipes);
-                                }
-
-                                rvRecipes.setVisibility(View.VISIBLE);
-                                emptyView.setVisibility(View.GONE);
-                            });
-
-                            hasMore = currentPage < totalPages;
-                            if (hasMore) {
-                                currentPage++;
-                            }
+                        if (page == 1) {
+                            adapter.setRecipes(new ArrayList<>(recipes));
                         } else {
-                            Log.d("RecommendFragment", "没有数据");
-                            requireActivity().runOnUiThread(() -> {
-                                if (currentPage == 1) {
-                                    emptyView.setText("暂无菜谱");
-                                    emptyView.setVisibility(View.VISIBLE);
-                                }
-                                rvRecipes.setVisibility(View.GONE);
-                            });
-                            hasMore = false;
+                            List<RecipeResponse> merged =
+                                    new ArrayList<>(adapter.getRecipes());
+                            merged.addAll(recipes);
+                            adapter.setRecipes(merged);
                         }
-                    } else {
-                        showError("加载失败: " + apiResponse.getMessage());
-                    }
-                } else {
-                    String errorMsg = "服务器响应错误: " + response.code();
-                    if (response.errorBody() != null) {
-                        try {
-                            errorMsg += " - " + response.errorBody().string();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    showError(errorMsg);
-                }
-            }
 
-            @Override
-            public void onFailure(Call<ApiResponse<Map<String, Object>>> call, Throwable t) {
-                mainHandler.post(() -> {
-                    isLoading = false;
-                    progressBar.setVisibility(View.GONE);
-                    String errorMsg = "网络错误: " + t.getMessage();
-                    if (t instanceof SocketTimeoutException) {
-                        errorMsg = "请求超时，请检查网络";
-                    } else if (t instanceof ConnectException) {
-                        errorMsg = "无法连接到服务器";
+                        rvRecipes.setVisibility(View.VISIBLE);
+                        emptyView.setVisibility(View.GONE);
+
+                        hasMore = page < totalPages;
+                        if (hasMore) currentPage = page + 1;
+
+                        rvRecipes.post(() -> {
+                            if (hasMore
+                                    && !isLoading
+                                    && !rvRecipes.canScrollVertically(1)) {
+
+                                loadRecipes(currentPage, currentTagId, generation);
+                            }
+                        });
                     }
-                    showError(errorMsg);
+
+                    @Override
+                    public void onFailure(Call<ApiResponse<Map<String, Object>>> call,
+                                          Throwable t) {
+                        if (generation != requestGeneration) return;
+
+                        isLoading = false;
+                        progressBar.setVisibility(View.GONE);
+                        hasMore = false;
+                    }
                 });
-            }
-        });
     }
 
     /**
