@@ -23,7 +23,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.api.ApiService;
-import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
 
 import java.io.InputStream;
@@ -33,10 +32,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder> {
 
@@ -100,18 +95,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
             selectedIds.clear();
         }
         notifyDataSetChanged();
-    }
-
-    public boolean isSelectionMode() {
-        return isSelectionMode;
-    }
-
-    public boolean isEditMode() {
-        return isEditMode;
-    }
-
-    public List<Integer> getSelectedItems() {
-        return selectedItems;
     }
 
     public Set<Integer> getSelectedIds() {
@@ -184,38 +167,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
                 break;
             }
         }
-    }
-
-    /**
-     * 批量检查购物车状态（可选）
-     */
-    public void checkCartStatusForAll() {
-        if (userId == -1) return;
-
-        for (RecipeResponse recipe : recipeList) {
-            checkCartStatusForSingleRecipe(recipe);
-        }
-    }
-
-    private void checkCartStatusForSingleRecipe(RecipeResponse recipe) {
-        Call<ApiResponse<Boolean>> call = apiService.checkIfInCart(userId, recipe.getRecipeId());
-        call.enqueue(new Callback<ApiResponse<Boolean>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Boolean> apiResponse = response.body();
-                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
-                        boolean inCart = apiResponse.getData();
-                        updateCartStatus(recipe.getRecipeId(), inCart);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
-                Log.e("RecipeAdapter", "检查购物车状态失败: " + t.getMessage());
-            }
-        });
     }
 
     /**

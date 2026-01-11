@@ -89,10 +89,10 @@
     <!-- 侧边抽屉菜单 -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigation_view"
-        android:layout_width="280dp"
+        android:layout_width="350dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="#FFFFFF"
-        app:headerLayout="@layout/nav_header" />
+        app:headerLayout="@layout/nav_header_shopping_cart" />
     
 </androidx.drawerlayout.widget.DrawerLayout>

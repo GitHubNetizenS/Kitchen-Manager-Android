@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="12dp"
+    android:gravity="center_vertical">
+
+    <CheckBox
+        android:id="@+id/cb_ingredient"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="食材名称"
+        android:textSize="16sp"
+        android:paddingVertical="4dp"
+        style="@style/CircularCheckBoxStyle"/>
+
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="待购买"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:paddingStart="8dp"/>
+
+</LinearLayout>

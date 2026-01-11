@@ -18,57 +18,88 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/imageView"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:scaleType="centerCrop"
-                app:srcCompat="@drawable/placeholder" />
-
+            <!-- 菜谱信息行 -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="16dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="12dp">
+
+                <ImageView
+                    android:id="@+id/imageView"
+                    android:layout_width="75dp"
+                    android:layout_height="79dp"
+                    android:clickable="true"
+                    android:scaleType="centerCrop"
+                    app:srcCompat="@drawable/placeholder" />
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal">
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp">
 
                     <TextView
                         android:id="@+id/recipe_name"
                         android:layout_width="wrap_content"
-                        android:layout_height="39dp"
-                        android:layout_weight="3"
+                        android:layout_height="wrap_content"
                         android:text="菜谱名称"
                         android:textColor="#FF7A00"
-                        android:textSize="22sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
+                    <TextView
+                        android:id="@+id/tv_progress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="购买进度: 0/0"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <CheckBox
-                    android:id="@+id/checkbox_bought"
-                    android:layout_width="122dp"
-                    android:layout_height="match_parent"
-                    android:text="已购买"
-                    style="@style/CircularCheckBoxStyle"
-                    android:textSize="18sp" />
+                <ImageView
+                    android:id="@+id/btn_delete"
+                    android:layout_width="43dp"
+                    android:layout_height="38dp"
+                    android:contentDescription="删除"
+                    android:src="@drawable/delete"
+                    android:visibility="visible"
+                    android:clickable="true"/>
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/btn_delete"
-                android:layout_width="43dp"
-                android:layout_height="38dp"
-                android:layout_gravity="top"
-                android:contentDescription="删除"
-                android:src="@drawable/delete"
-                android:visibility="visible" />
+            <!-- 食材列表区域 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#F8F8F8"
+                android:padding="8dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="所需食材:"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:layout_marginBottom="8dp"/>
+
+                <!-- 食材列表的RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_ingredients"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"/>
+            </LinearLayout>
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
