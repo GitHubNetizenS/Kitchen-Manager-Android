@@ -180,7 +180,7 @@ public class SearchActivity extends AppCompatActivity {
             userId = 0; // 使用默认值
         }
 
-        Call<ApiResponse<List<RecipeResponse>>> call = apiService.searchRecipesWithCartStatus(
+        Call<ApiResponse<List<RecipeResponse>>> call = apiService.searchRecipes(
                 keyword,
                 sortType,
                 userId

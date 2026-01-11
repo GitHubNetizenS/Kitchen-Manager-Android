@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 第一层：黑色边框 -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#000000" /> <!-- 黑色边框 -->
+            <size android:width="28dp" android:height="28dp" />
+        </shape>
+    </item>
+
+    <!-- 第二层：橘色背景（比黑色层小2dp，形成边框效果） -->
+    <item android:top="2dp" android:bottom="2dp" android:left="2dp" android:right="2dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFA500" /> <!-- 橘色背景 -->
+        </shape>
+    </item>
+
+    <!-- 使用勾号图标 -->
+
+    <item android:drawable="@drawable/ic_check"
+          android:width="24dp"
+          android:height="24dp"
+          android:gravity="center"/>
+    -->
+</layer-list>

@@ -47,7 +47,20 @@ public class KitchenFragment extends Fragment implements IngredientAdapter.OnIte
     private IngredientAdapter adapter;
     private List<Ingredient> allIngredients = new ArrayList<>();
     private List<Ingredient> filteredIngredients = new ArrayList<>();
-    private String[] categories = {"全部", "蔬菜", "肉类","药食","果品类", "鱼类", "五谷杂粮", "其他"};
+    private String[] categories = {
+            "全部",
+            "五谷杂粮",
+            "蔬菜",
+            "果品类",
+            "肉类",
+            "水产",
+            "蛋、奶",
+            "豆类、豆制品",
+            "鱼类",
+            "药食",
+            "调味品",
+            "其他"
+    };
     //修改数组内容，可以直接映射修改页面中的分类
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

@@ -7,4 +7,10 @@
     <style name="TabTextStyle" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:textSize">14sp</item>
     </style>
+    <!-- 圆形CheckBox样式 -->
+    <style name="CircularCheckBoxStyle" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:button">@drawable/checkbox_circular_selector</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingLeft">8dp</item>
+    </style>
 </resources>
