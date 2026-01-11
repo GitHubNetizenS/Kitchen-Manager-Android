@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://192.168.43.193:8080/";
+    String BASE_URL = "http://192.168.43.193:8082/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -229,33 +229,5 @@ public interface ApiService {
             @Query("recipe_id") int recipeId
     );
 
-    // 购物车相关接口
-    @GET("api/cart/shopping-recipes")
-    Call<ApiResponse<List<Map<String, Object>>>> getShoppingCartRecipes(
-            @Query("user_id") int userId
-    );
 
-    @FormUrlEncoded
-    @POST("api/cart/update-all-status")
-    Call<ApiResponse<Void>> updateAllCartIngredientsStatus(
-            @Field("user_id") int userId,
-            @Field("recipe_id") int recipeId,
-            @Field("status") String status
-    );
-
-    @FormUrlEncoded
-    @POST("api/cart/delete-recipe")
-    Call<ApiResponse<Void>> deleteRecipeFromCart(
-            @Field("user_id") int userId,
-            @Field("recipe_id") int recipeId
-    );
-
-    @POST("cart/update-status")
-    @FormUrlEncoded
-    Call<ApiResponse<Void>> updateIngredientStatus(
-            @Field("user_id") int userId,
-            @Field("recipe_id") int recipeId,
-            @Field("ingredient_id") int ingredientId,
-            @Field("status") String status
-    );
 }
