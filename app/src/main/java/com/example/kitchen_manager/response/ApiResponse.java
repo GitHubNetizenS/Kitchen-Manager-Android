@@ -1,8 +1,15 @@
 package com.example.kitchen_manager.response;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ApiResponse<T> {
+    @SerializedName("code")
     private int code;
+
+    @SerializedName("message")
     private String message;
+
+    @SerializedName("data")
     private T data;
 
     // 无参构造函数（Gson 反序列化需要）
@@ -30,4 +37,12 @@ public class ApiResponse<T> {
         return code == 200 || code == 0; // 0 是常见自定义成功码
     }
 
+    @Override
+    public String toString() {
+        return "ApiResponse{" +
+                "code=" + code +
+                ", message='" + message + '\'' +
+                ", data=" + data +
+                '}';
+    }
 }

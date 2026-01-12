@@ -61,6 +61,15 @@
                         android:textSize="14sp"
                         android:textColor="#666666"
                         android:layout_marginTop="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tv_added_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="添加时间: 刚刚"
+                        android:textColor="#999999"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <ImageView
@@ -108,8 +117,8 @@
 
                     <ImageView
                         android:id="@+id/iv_expand_icon"
-                        android:layout_width="1dp"
-                        android:layout_height="16dp"
+                        android:layout_width="8dp"
+                        android:layout_height="21dp"
                         android:layout_weight="1"
                         android:src="@drawable/ic_expand_more"
                         app:tint="#666666" />

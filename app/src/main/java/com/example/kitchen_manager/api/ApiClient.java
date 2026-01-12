@@ -1,5 +1,8 @@
 package com.example.kitchen_manager.api;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -12,6 +15,11 @@ public class ApiClient {
 
     public static ApiService getApiService() {
         if (retrofit == null) {
+
+            // 创建Gson实例，配置正确的反序列化选项
+            Gson gson = new GsonBuilder()
+                    .setLenient() // 设置宽松模式，便于调试
+                    .create();
 
             // 创建带超时设置的OkHttpClient
             OkHttpClient okHttpClient = new OkHttpClient.Builder()

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.171.35:8080/";
+    String BASE_URL = "http://10.68.157.194:8080/";
 
     // 用户相关接口
     @FormUrlEncoded
@@ -264,14 +264,15 @@ public interface ApiService {
     );
 
     /**
-     * 更新菜谱所有食材的购买状态
-     * POST /api/cart/update-all-status
+     * 更新单个食材的购买状态
+     * POST /api/cart/update-status
      */
-    @POST("cart/update-all-status")
+    @POST("/api/cart/update-status")
     @FormUrlEncoded
-    Call<ApiResponse<Void>> updateAllCartIngredientsStatus(
+    Call<ApiResponse<Void>> updateIngredientStatus(
             @Field("user_id") int userId,
             @Field("recipe_id") int recipeId,
+            @Field("ingredient_id") int ingredientId,
             @Field("status") String status
     );
 

@@ -2,12 +2,8 @@ package com.example.kitchen_manager.adapters;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,9 +21,6 @@ import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.response.RecipeResponse;
 
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -407,43 +400,4 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         }
     }
 
-    // 图片加载辅助方法
-    private void loadImageAsync(String imageUrl, ImageView imageView) {
-        new AsyncTask<String, Void, Bitmap>() {
-            @Override
-            protected Bitmap doInBackground(String... urls) {
-                try {
-                    // 构造完整URL
-                    String fullUrl = urls[0];
-                    if (!fullUrl.startsWith("http")) {
-                        fullUrl = "http://10.0.2.2:8080" + (fullUrl.startsWith("/") ? "" : "/") + fullUrl;
-                    }
-
-                    URL url = new URL(fullUrl);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setDoInput(true);
-                    connection.setConnectTimeout(5000);
-                    connection.setReadTimeout(5000);
-                    connection.connect();
-
-                    if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                        InputStream input = connection.getInputStream();
-                        return BitmapFactory.decodeStream(input);
-                    }
-                } catch (Exception e) {
-                    Log.e("RecipeAdapter", "Error loading image: " + e.getMessage());
-                }
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Bitmap bitmap) {
-                if (bitmap != null) {
-                    imageView.setImageBitmap(bitmap);
-                } else {
-                    imageView.setImageResource(R.drawable.placeholder);
-                }
-            }
-        }.execute(imageUrl);
-    }
 }

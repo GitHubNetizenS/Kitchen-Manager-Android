@@ -17,13 +17,5 @@
         android:paddingVertical="4dp"
         style="@style/CircularCheckBoxStyle"/>
 
-    <TextView
-        android:id="@+id/tv_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="待购买"
-        android:textSize="14sp"
-        android:textColor="#666666"
-        android:paddingStart="8dp"/>
 
 </LinearLayout>
