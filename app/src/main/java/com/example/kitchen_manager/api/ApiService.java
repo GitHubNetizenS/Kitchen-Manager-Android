@@ -71,6 +71,12 @@ public interface ApiService {
             @Query("recipe_id") int recipeId
     );
 
+    // 获取菜谱相关视频
+    @GET("api/recipe/videos")
+    Call<ApiResponse<List<RecipeVideoResponse>>> getRecipeVideos(
+            @Query("recipe_id") int recipeId
+    );
+
     // 点击增加菜谱热度
     @FormUrlEncoded
     @POST("api/recipe/popularity")
