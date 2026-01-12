@@ -211,22 +211,17 @@ public class CategoryFragment extends Fragment {
             appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
                 @Override
                 public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
-                    // verticalOffset 是负数，表示已滚动的距离
-                    // 当完全展开时，verticalOffset = 0
-                    // 当完全折叠时，verticalOffset = -appBarLayout.getTotalScrollRange()
-
                     int totalScrollRange = appBarLayout.getTotalScrollRange();
                     if (totalScrollRange > 0) {
                         // 计算折叠百分比
                         float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
 
-                        // 如果折叠超过50%，认为是折叠状态
-                        if (percentage >= 0.5f && isExpanded) {
-                            isExpanded = false;
-                            updateExpandIndicator();
-                        } else if (percentage < 0.5f && !isExpanded) {
-                            isExpanded = true;
-                            updateExpandIndicator();
+                        // 更新状态但不触发动画
+                        boolean newExpandedState = percentage < 0.5f;
+                        if (newExpandedState != isExpanded) {
+                            isExpanded = newExpandedState;
+                            // 只更新角度，不播放动画
+                            updateIndicatorAngleWithoutAnimation();
                         }
                     }
                 }
@@ -234,11 +229,31 @@ public class CategoryFragment extends Fragment {
         }
     }
 
+    private void updateIndicatorAngleWithoutAnimation() {
+        if (ivExpandIndicator != null) {
+            ivExpandIndicator.clearAnimation();
+            ivExpandIndicator.setRotation(isExpanded ? 0 : 180);
+        }
+    }
+
     private void updateExpandIndicator() {
         if (ivExpandIndicator != null) {
+            // 清除之前的动画
+            ivExpandIndicator.clearAnimation();
+
+            // 直接从当前角度旋转到目标角度
+            float startAngle = ivExpandIndicator.getRotation();
+            float endAngle = isExpanded ? 0 : 180;
+
+            // 如果角度已经相同，不执行动画
+            if (Math.abs(startAngle - endAngle) < 1) {
+                ivExpandIndicator.setRotation(endAngle);
+                return;
+            }
+
             RotateAnimation rotate = new RotateAnimation(
-                    isExpanded ? 180 : 0,
-                    isExpanded ? 0 : 180,
+                    startAngle,
+                    endAngle,
                     Animation.RELATIVE_TO_SELF, 0.5f,
                     Animation.RELATIVE_TO_SELF, 0.5f);
             rotate.setDuration(300);
@@ -246,6 +261,7 @@ public class CategoryFragment extends Fragment {
             ivExpandIndicator.startAnimation(rotate);
         }
     }
+
 
     private void handleTasteClick(Button btn) {
         String value = tasteButtons.get(btn.getId());
