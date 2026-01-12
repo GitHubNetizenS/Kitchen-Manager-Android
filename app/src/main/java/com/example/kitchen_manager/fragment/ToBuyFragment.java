@@ -108,6 +108,11 @@ public class ToBuyFragment extends Fragment {
             rvRecipes.setVisibility(View.GONE);
             return;
         }
+        for (Map<String, Object> recipe : shoppingCartRecipes) {
+            if (!recipe.containsKey("isExpanded")) {
+                recipe.put("isExpanded", false);
+            }
+        }
 
         progressBar.setVisibility(View.VISIBLE);
         empty.setVisibility(View.GONE);
@@ -131,6 +136,14 @@ public class ToBuyFragment extends Fragment {
                             } else {
                                 empty.setVisibility(View.GONE);
                                 rvRecipes.setVisibility(View.VISIBLE);
+
+                                // 为每个菜谱添加展开状态字段（如果不存在）
+                                for (Map<String, Object> recipe : shoppingCartRecipes) {
+                                    if (!recipe.containsKey("isExpanded")) {
+                                        recipe.put("isExpanded", false);
+                                    }
+                                }
+
                                 adapter.setRecipes(shoppingCartRecipes);
                                 adapter.notifyDataSetChanged();
                             }
@@ -170,6 +183,7 @@ public class ToBuyFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull RecipeViewHolder holder, int position) {
             Map<String, Object> recipe = recipes.get(position);
+            int currentPosition = position;
 
             // 设置菜谱名称
             String recipeName = (String) recipe.get("recipeName");
@@ -252,12 +266,18 @@ public class ToBuyFragment extends Fragment {
                 holder.rvIngredients.setLayoutManager(new LinearLayoutManager(getContext()));
                 holder.rvIngredients.setAdapter(ingredientAdapter);
 
+                // 从数据中获取保存的展开状态
+                final boolean[] isExpanded = {(boolean) recipe.getOrDefault("isExpanded", false)};
+
                 // 设置下拉框标题的点击事件
                 holder.expandableHeader.setOnClickListener(v -> {
                     // 切换展开状态
-                    holder.isExpanded = !holder.isExpanded;
+                    isExpanded[0] = !isExpanded[0];
+                    // 保存状态到数据中
+                    recipe.put("isExpanded", isExpanded[0]);
+                    holder.isExpanded = isExpanded[0];
 
-                    if (holder.isExpanded) {
+                    if (isExpanded[0]) {
                         // 展开：显示食材列表，改变图标
                         holder.rvIngredients.setVisibility(View.VISIBLE);
                         holder.ivExpandIcon.setImageResource(R.drawable.ic_expand_less);
@@ -270,11 +290,20 @@ public class ToBuyFragment extends Fragment {
                     }
                 });
 
-                // 初始状态：收起
-                holder.rvIngredients.setVisibility(View.GONE);
-                holder.ivExpandIcon.setImageResource(R.drawable.ic_expand_more);
-                holder.tvHeaderTitle.setText("所需食材 (" + ingredients.size() + "种，点击展开)");
-                holder.isExpanded = false;
+                // 根据保存的状态设置初始UI
+                if (isExpanded[0]) {
+                    // 展开：显示食材列表，改变图标
+                    holder.rvIngredients.setVisibility(View.VISIBLE);
+                    holder.ivExpandIcon.setImageResource(R.drawable.ic_expand_less);
+                    holder.tvHeaderTitle.setText("所需食材 (点击收起)");
+                    holder.isExpanded = true;
+                } else {
+                    // 收起：隐藏食材列表，改变图标
+                    holder.rvIngredients.setVisibility(View.GONE);
+                    holder.ivExpandIcon.setImageResource(R.drawable.ic_expand_more);
+                    holder.tvHeaderTitle.setText("所需食材 (" + ingredients.size() + "种，点击展开)");
+                    holder.isExpanded = false;
+                }
             } else {
                 // 如果没有食材，隐藏整个食材列表区域
                 holder.expandableHeader.setVisibility(View.GONE);
@@ -416,35 +445,29 @@ public class ToBuyFragment extends Fragment {
                                         int recipePosition, int ingredientPosition) {
         if (userId == -1 || apiService == null) return;
 
+        // 保存当前展开状态
+        boolean wasExpanded = false;
+        if (recipePosition >= 0 && recipePosition < shoppingCartRecipes.size()) {
+            Map<String, Object> recipe = shoppingCartRecipes.get(recipePosition);
+            wasExpanded = (boolean) recipe.getOrDefault("isExpanded", false);
+        }
+
+        boolean finalWasExpanded = wasExpanded;
         apiService.updateIngredientStatus(userId, recipeId, ingredientId, status)
                 .enqueue(new Callback<ApiResponse<Void>>() {
                     @Override
                     public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-
-                        // 检查响应体
-                        if (response.body() == null) {
-                            if (response.errorBody() != null) {
-                                String errorBody = null;
-                                try {
-                                    errorBody = response.errorBody().string();
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                Log.d("ShoppingCart", "Error body: " + errorBody);
-                            }
-                            Toast.makeText(getContext(), "服务器返回空响应", Toast.LENGTH_SHORT).show();
-                            loadShoppingCartData();
-                            return;
-                        }
-                        Gson gson = new Gson();
-                        String responseJson = gson.toJson(response.body());
-                        // 检查响应状态
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                             // 更新本地数据
                             if (recipePosition >= 0 && recipePosition < shoppingCartRecipes.size()) {
+                                Map<String, Object> recipe = shoppingCartRecipes.get(recipePosition);
+
+                                // 恢复展开状态
+                                recipe.put("isExpanded", finalWasExpanded);
+
                                 @SuppressWarnings("unchecked")
                                 List<Map<String, Object>> ingredients =
-                                        (List<Map<String, Object>>) shoppingCartRecipes.get(recipePosition).get("ingredients");
+                                        (List<Map<String, Object>>) recipe.get("ingredients");
 
                                 if (ingredientPosition >= 0 && ingredientPosition < ingredients.size()) {
                                     ingredients.get(ingredientPosition).put("status", status);
@@ -457,19 +480,11 @@ public class ToBuyFragment extends Fragment {
                                         }
                                     }
 
-                                    shoppingCartRecipes.get(recipePosition).put("purchasedCount", purchasedCount);
+                                    recipe.put("purchasedCount", purchasedCount);
 
-                                    // 更新进度显示
-                                    Object totalObj = shoppingCartRecipes.get(recipePosition).get("totalIngredients");
-                                    int totalIngredients = 0;
-                                    if (totalObj instanceof Number) {
-                                        totalIngredients = ((Number) totalObj).intValue();
-                                    }
-
-                                    // 通知适配器更新该位置
+                                    // 通知适配器更新该位置，但保持展开状态
                                     adapter.notifyItemChanged(recipePosition);
 
-                                    // 显示不同的提示信息
                                     if ("purchased".equals(status)) {
                                         Toast.makeText(getContext(), "食材已购买并添加到库存", Toast.LENGTH_SHORT).show();
                                     } else {
@@ -478,12 +493,7 @@ public class ToBuyFragment extends Fragment {
                                 }
                             }
                         } else {
-                            Log.d("ShoppingCart", "进入失败分支");
-                            String errorMsg = "更新失败";
-                            if (response.body() != null && response.body().getMessage() != null) {
-                                errorMsg = response.body().getMessage();
-                            }
-                            Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "更新失败，请重试", Toast.LENGTH_SHORT).show();
                             // 刷新数据
                             loadShoppingCartData();
                         }
@@ -491,8 +501,7 @@ public class ToBuyFragment extends Fragment {
 
                     @Override
                     public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                        Log.e("ShoppingCart", "网络请求失败", t);
-                        Toast.makeText(getContext(), "网络错误，请检查连接: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "网络错误，请检查连接", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
