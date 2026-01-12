@@ -10,7 +10,17 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.157.194:8080/";
+    String BASE_URL = "http://10.68.143.39:8080/";
+
+    @GET("api/recipes/filter")
+    Call<ApiResponse<Map<String, Object>>> getFilteredRecipes(
+            @Query("taste") String taste,
+            @Query("method") String method,
+            @Query("difficulty") String difficulty,
+            @Query("user_id") int userId,
+            @Query("page") int page,
+            @Query("page_size") int pageSize
+    );
 
     // 用户相关接口
     @FormUrlEncoded

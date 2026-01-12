@@ -75,4 +75,9 @@ public class RecipeResponse {
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
     public String getNeeds() { return needs; }
     public void setNeeds(String needs) { this.needs = needs; }
+
+    public int getPopularity() {
+
+        return 0;
+    }
 }

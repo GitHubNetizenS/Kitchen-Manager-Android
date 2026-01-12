@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- AppBarLayout - 可折叠的头部 -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:elevation="0dp">
+
+        <!-- CollapsingToolbarLayout - 折叠布局 -->
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/collapsing_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:expandedTitleMarginStart="48dp"
+            app:expandedTitleMarginEnd="64dp"
+            app:titleEnabled="false"
+            app:contentScrim="?attr/colorPrimary"
+            app:toolbarId="@+id/toolbar">
+
+            <!-- 真正的分类内容区域 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@android:color/white"
+                android:paddingVertical="8dp"
+                app:layout_collapseMode="parallax"
+                app:layout_collapseParallaxMultiplier="0.7">
+
+                <!-- 口味（多选） -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="口味"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:paddingHorizontal="16dp">
+                    <LinearLayout
+                        android:id="@+id/ll_taste"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <!-- 口味按钮保持不变 -->
+                        <Button
+                            android:id="@+id/btn_taste_all"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_selected"
+                            android:padding="8dp"
+                            android:text="全部"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_sour"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="酸"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_sweet"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="甜"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_bitter"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="苦"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_spicy"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="辣"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_salty"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="咸"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_taste_umami"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="鲜"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- 工艺（单选）- 改为两行布局 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="工艺"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <LinearLayout
+                    android:id="@+id/ll_method_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="16dp"
+                    android:paddingHorizontal="16dp">
+
+                    <!-- 第一行 -->
+                    <LinearLayout
+                        android:id="@+id/ll_method_row1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+                        <Button
+                            android:id="@+id/btn_method_all"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_selected"
+                            android:padding="8dp"
+                            android:text="全部"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_fry"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="煎"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_stir"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="炒"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_boil"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="煮"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_deepfry"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="炸"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                    </LinearLayout>
+
+                    <!-- 第二行 -->
+                    <LinearLayout
+                        android:id="@+id/ll_method_row2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <Button
+                            android:id="@+id/btn_method_stew"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="炖"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_pickle"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="腌"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_roast"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="烧"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_mix"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="拌"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_method_other"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="其他"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 难度（单选） -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="难度"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:paddingHorizontal="16dp">
+                    <LinearLayout
+                        android:id="@+id/ll_difficulty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <Button
+                            android:id="@+id/btn_diff_all"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_selected"
+                            android:padding="8dp"
+                            android:text="全部"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_diff_easy"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="简单"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_diff_normal"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="普通"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_diff_hard"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="高级"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                        <Button
+                            android:id="@+id/btn_diff_god"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_tag_normal"
+                            android:padding="8dp"
+                            android:text="神级"
+                            android:textColor="#666666"
+                            android:textSize="12sp"
+                            android:layout_width="wrap_content"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <!-- 排序（单选） -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="排序"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <LinearLayout
+                    android:id="@+id/ll_sort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:layout_marginBottom="8dp">
+                    <Button
+                        android:id="@+id/btn_sort_all"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_tag_selected"
+                        android:padding="8dp"
+                        android:text="综合"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"/>
+                    <Button
+                        android:id="@+id/btn_sort_match"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_tag_normal"
+                        android:padding="8dp"
+                        android:text="匹配度"
+                        android:textColor="#666666"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"/>
+                    <Button
+                        android:id="@+id/btn_sort_popular"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_tag_normal"
+                        android:padding="8dp"
+                        android:text="热度"
+                        android:textColor="#666666"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/white"
+                android:visibility="gone"
+                app:layout_collapseMode="pin"
+                app:title="筛选条件"
+                app:titleTextColor="#333333" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- 使用 RecyclerView 而不是 NestedScrollView，以便监听滚动 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_recipes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- 加载进度条 -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- 空状态视图 -->
+    <TextView
+        android:id="@+id/emptyView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:text="加载中..."
+        android:textSize="18sp"
+        android:visibility="visible" />
+
+    <!-- 展开/折叠指示器 -->
+    <FrameLayout
+        android:id="@+id/fl_expand_container"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        app:layout_anchor="@id/app_bar"
+        app:layout_anchorGravity="top|end">
+
+        <ImageView
+            android:id="@+id/iv_expand_indicator"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_expand_more"
+            android:contentDescription="展开/折叠"
+            android:rotation="0" />
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_expand_indicator" />
+
+    </FrameLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -5,6 +5,10 @@
         android:icon="@drawable/home_icon_selector"
         android:title="首页" />
     <item
+        android:id="@+id/nav_category"
+        android:icon="@drawable/category_icon_selector"
+        android:title="分类" />
+    <item
         android:id="@+id/nav_kitchen"
         android:icon="@drawable/kitchen_icon_selector"
         android:title="厨房" />

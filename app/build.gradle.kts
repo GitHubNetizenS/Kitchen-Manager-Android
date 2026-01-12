@@ -2,8 +2,21 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
-
 android {
+    packagingOptions {
+        exclude("META-INF/INDEX.LIST")
+        exclude("META-INF/io.netty.versions.properties")
+        exclude("META-INF/DEPENDENCIES")
+        exclude("META-INF/LICENSE")
+        exclude("META-INF/LICENSE.txt")
+        exclude("META-INF/license.txt")
+        exclude("META-INF/NOTICE")
+        exclude("META-INF/NOTICE.txt")
+        exclude("META-INF/notice.txt")
+        exclude("META-INF/ASL2.0")
+        exclude("META-INF/*.kotlin_module")
+    }
+
     namespace = "com.example.kitchen_manager"
     compileSdk = 35
 
@@ -44,6 +57,8 @@ android {
 dependencies {
     // 图片加载库 - Glide（推荐）
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.firebase.appdistribution.gradle)
+    implementation(libs.fragment)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // 或者使用 Picasso（如果你要保留现有代码）

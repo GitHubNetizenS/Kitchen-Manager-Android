@@ -21,6 +21,7 @@ import android.widget.TextView;
 import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.databinding.ActivityMainBinding;
+import com.example.kitchen_manager.fragment.CategoryFragment;
 import com.example.kitchen_manager.fragment.KitchenFragment;
 import com.example.kitchen_manager.fragment.MineFragment;
 import com.example.kitchen_manager.fragment.RecommendFragment;
@@ -163,17 +164,18 @@ public class MainActivity extends AppCompatActivity {
             Fragment selectedFragment = null;
             String title = "";
 
-            if(item.getItemId()==R.id.nav_home) {
+            if (item.getItemId() == R.id.nav_home) {
                 selectedFragment = new RecommendFragment();
-                title="推荐食谱";
-            }
-            else if(item.getItemId()==R.id.nav_kitchen) {
+                title = "推荐食谱";
+            } else if (item.getItemId() == R.id.nav_category) {
+                selectedFragment = new CategoryFragment();
+                title = "分类";
+            } else if (item.getItemId() == R.id.nav_kitchen) {
                 selectedFragment = new KitchenFragment();
-                title="我的厨房";
-            }
-            else if(item.getItemId()==R.id.nav_profile){
+                title = "我的厨房";
+            } else if (item.getItemId() == R.id.nav_profile) {
                 selectedFragment = new MineFragment();
-                title="我的";
+                title = "我的";
             }
 
             if (selectedFragment != null) {

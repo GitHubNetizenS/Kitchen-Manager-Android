@@ -14,5 +14,6 @@
     <color name="dark_gray">#616161</color>
     <color name="divider">#E0E0E0</color>
     <color name="brown">#5d3d21</color>
-
+    <color name="primary_color">#FF5722</color>
+    <color name="primary_dark_color">#E64A19</color>
 </resources>
