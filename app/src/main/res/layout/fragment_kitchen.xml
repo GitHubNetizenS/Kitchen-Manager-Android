@@ -21,7 +21,7 @@
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             android:background="#FFFFFF"
-            android:hint="搜索食材或工具"
+            android:hint="搜索食材"
             android:textSize="14sp"
             android:textColor="#505050"/>
 
