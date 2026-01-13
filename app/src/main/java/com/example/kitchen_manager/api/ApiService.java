@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ApiService {
-    String BASE_URL = "http://10.68.143.39:8080/";
+    String BASE_URL = "http://192.168.43.193:8080/";
 
     /**
      * 带排序的筛选搜索
