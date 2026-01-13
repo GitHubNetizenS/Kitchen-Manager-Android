@@ -414,23 +414,23 @@
                         android:minWidth="0dp"
                         android:minHeight="0dp"/>
                     <Button
-                        android:id="@+id/btn_sort_match"
+                        android:id="@+id/btn_sort_ingredient"
                         android:layout_height="32dp"
                         android:layout_marginEnd="8dp"
                         android:background="@drawable/bg_tag_normal"
                         android:padding="8dp"
-                        android:text="匹配度"
+                        android:text="原料匹配度"
                         android:textColor="#666666"
                         android:textSize="12sp"
                         android:layout_width="wrap_content"
                         android:minWidth="0dp"
                         android:minHeight="0dp"/>
                     <Button
-                        android:id="@+id/btn_sort_popular"
+                        android:id="@+id/btn_sort_tag"
                         android:layout_height="32dp"
                         android:background="@drawable/bg_tag_normal"
                         android:padding="8dp"
-                        android:text="热度"
+                        android:text="标签匹配值"
                         android:textColor="#666666"
                         android:textSize="12sp"
                         android:layout_width="wrap_content"

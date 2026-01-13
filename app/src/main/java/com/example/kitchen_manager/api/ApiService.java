@@ -12,11 +12,26 @@ import java.util.Map;
 public interface ApiService {
     String BASE_URL = "http://10.68.143.39:8080/";
 
+    /**
+     * 带排序的筛选搜索
+     */
+    @GET("recipes/filter-with-sort")
+    Call<ApiResponse<Map<String, Object>>> getFilteredRecipesWithSort(
+            @Query("tastes") String tastes,
+            @Query("method") String method,
+            @Query("difficulty") String difficulty,
+            @Query("sort") String sort,
+            @Query("userId") int userId,
+            @Query("page") int page,
+            @Query("pageSize") int pageSize
+    );
+
     @GET("api/recipes/filter")
     Call<ApiResponse<Map<String, Object>>> getFilteredRecipes(
             @Query("taste") String taste,
             @Query("method") String method,
             @Query("difficulty") String difficulty,
+            @Query("sort") String sort,  // 确保有这个参数
             @Query("user_id") int userId,
             @Query("page") int page,
             @Query("page_size") int pageSize
@@ -183,6 +198,7 @@ public interface ApiService {
     Call<ApiResponse<List<RecipeResponse>>> getRecipesByMatchValue(
             @Query("user_id") int userId
     );
+
     // 在 ApiService 接口中添加搜索方法
     @GET("api/search")
     Call<ApiResponse<List<RecipeResponse>>> searchRecipes(

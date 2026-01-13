@@ -20,6 +20,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.animation.ObjectAnimator;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -63,7 +65,6 @@ public class CategoryFragment extends Fragment {
     private boolean isLoading = false;
     private boolean hasMore = true;
     private final int pageSize = 20;
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // 折叠控件
     private AppBarLayout appBarLayout;
@@ -97,9 +98,18 @@ public class CategoryFragment extends Fragment {
 
         initViews();
         setupButtonMaps();
+
+        // 初始化排序按钮文字
+        Button btnTagMatch = rootView.findViewById(R.id.btn_sort_tag);
+        Button btnIngredientMatch = rootView.findViewById(R.id.btn_sort_ingredient);
+        if (btnTagMatch != null && btnIngredientMatch != null) {
+            btnTagMatch.setText("标签匹配");
+            btnIngredientMatch.setText("食材匹配");
+        }
+
         setupListeners();
         setupRecyclerView();
-        setupAppBarListener(); // 添加AppBar滚动监听
+        setupAppBarListener();
         updateButtonStates();
         loadRecipes();
 
@@ -150,8 +160,8 @@ public class CategoryFragment extends Fragment {
 
         // 排序 (单选)
         sortButtons.put(R.id.btn_sort_all, "all");
-        sortButtons.put(R.id.btn_sort_match, "match");
-        sortButtons.put(R.id.btn_sort_popular, "popularity");
+        sortButtons.put(R.id.btn_sort_tag, "tag_match");
+        sortButtons.put(R.id.btn_sort_ingredient, "ingredient_match");
     }
 
     private void setupListeners() {
@@ -216,12 +226,12 @@ public class CategoryFragment extends Fragment {
                         // 计算折叠百分比
                         float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
 
-                        // 更新状态但不触发动画
+                        // 判断是否状态改变
                         boolean newExpandedState = percentage < 0.5f;
                         if (newExpandedState != isExpanded) {
                             isExpanded = newExpandedState;
-                            // 只更新角度，不播放动画
-                            updateIndicatorAngleWithoutAnimation();
+                            // 使用动画更新指示器
+                            updateExpandIndicator();
                         }
                     }
                 }
@@ -238,27 +248,15 @@ public class CategoryFragment extends Fragment {
 
     private void updateExpandIndicator() {
         if (ivExpandIndicator != null) {
-            // 清除之前的动画
-            ivExpandIndicator.clearAnimation();
-
-            // 直接从当前角度旋转到目标角度
-            float startAngle = ivExpandIndicator.getRotation();
-            float endAngle = isExpanded ? 0 : 180;
-
-            // 如果角度已经相同，不执行动画
-            if (Math.abs(startAngle - endAngle) < 1) {
-                ivExpandIndicator.setRotation(endAngle);
-                return;
-            }
-
-            RotateAnimation rotate = new RotateAnimation(
-                    startAngle,
-                    endAngle,
-                    Animation.RELATIVE_TO_SELF, 0.5f,
-                    Animation.RELATIVE_TO_SELF, 0.5f);
-            rotate.setDuration(300);
-            rotate.setFillAfter(true);
-            ivExpandIndicator.startAnimation(rotate);
+            // 使用 ObjectAnimator 实现平滑旋转
+            ObjectAnimator rotation = ObjectAnimator.ofFloat(
+                    ivExpandIndicator,
+                    "rotation",
+                    ivExpandIndicator.getRotation(),
+                    isExpanded ? 0 : 180
+            );
+            rotation.setDuration(300);
+            rotation.start();
         }
     }
 
@@ -303,11 +301,13 @@ public class CategoryFragment extends Fragment {
                 if (value.equals(selectedSort)) return;
                 selectedSort = value;
                 changed = true;
+                // 排序改变时也需要更新按钮状态
+                updateSortButtonState(value);
                 break;
         }
         if (changed) {
             updateButtonStates();
-            resetAndLoad();
+            resetAndLoad(); // 重新加载数据
         }
     }
 
@@ -362,15 +362,8 @@ public class CategoryFragment extends Fragment {
             }
         }
 
-        // 更新排序按钮 - 单选逻辑
-        for (Map.Entry<Integer, String> entry : sortButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                String value = entry.getValue();
-                boolean selected = value.equals(selectedSort);
-                updateButtonStyle(btn, selected);
-            }
-        }
+        // 更新排序按钮状态（使用新方法）
+        updateSortButtonState(selectedSort);
     }
 
     private void updateButtonStyle(Button btn, boolean selected) {
@@ -642,17 +635,20 @@ public class CategoryFragment extends Fragment {
         // 构建口味参数：使用逗号分隔多个口味
         String tasteParam = String.join(",", selectedTastes);
 
+        // 确保使用正确的排序参数
         Call<ApiResponse<Map<String, Object>>> call = apiService.getFilteredRecipes(
                 tasteParam.isEmpty() ? "" : tasteParam,
                 selectedMethod,
                 selectedDifficulty,
+                selectedSort, // 添加sort参数
                 userId,
                 currentPage,
                 pageSize);
 
         call.enqueue(new Callback<ApiResponse<Map<String, Object>>>() {
             @Override
-            public void onResponse(Call<ApiResponse<Map<String, Object>>> call, Response<ApiResponse<Map<String, Object>>> response) {
+            public void onResponse(Call<ApiResponse<Map<String, Object>>> call,
+                                   Response<ApiResponse<Map<String, Object>>> response) {
                 isLoading = false;
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful() && response.body() != null) {
@@ -661,23 +657,13 @@ public class CategoryFragment extends Fragment {
                         Map<String, Object> data = apiResponse.getData();
                         List<RecipeResponse> newRecipes = parseRecipes(data.get("recipes"));
 
-                        // 从data中获取总数，如果没有则使用recipes.size()
+                        // 从data中获取总数和分页信息
                         int total = 0;
                         if (data.containsKey("total_count")) {
                             total = ((Number) data.get("total_count")).intValue();
-                        } else {
-                            total = newRecipes.size();
                         }
 
-                        // 客户端排序
-                        if ("popularity".equals(selectedSort)) {
-                            // 按热度排序
-                            newRecipes.sort((r1, r2) -> Integer.compare(r2.getPopularity(), r1.getPopularity()));
-                        } else if ("match".equals(selectedSort)) {
-                            // 匹配度排序 - 需要后端支持，这里暂时按热度排序
-                            newRecipes.sort((r1, r2) -> Integer.compare(r2.getPopularity(), r1.getPopularity()));
-                        }
-                        // "all" 使用默认排序
+                        int totalPages = (int) Math.ceil((double) total / pageSize);
 
                         if (currentPage == 1) {
                             adapter.setRecipes(newRecipes);
@@ -686,7 +672,7 @@ public class CategoryFragment extends Fragment {
                             adapter.notifyDataSetChanged();
                         }
 
-                        hasMore = adapter.getItemCount() < total;
+                        hasMore = currentPage < totalPages;
                         currentPage++;
 
                         updateEmptyView();
@@ -714,6 +700,41 @@ public class CategoryFragment extends Fragment {
                 updateEmptyView();
             }
         });
+    }
+
+
+    private void updateSortButtonState(String selectedSortType) {
+        if (rootView == null) return;
+
+        int orangeLight = getResources().getColor(R.color.orange_light);
+        int lightGray = getResources().getColor(R.color.light_gray);
+        int white = getResources().getColor(android.R.color.white);
+        int black = getResources().getColor(android.R.color.black);
+
+        Button btnAll = rootView.findViewById(R.id.btn_sort_all);
+        Button btnTagMatch = rootView.findViewById(R.id.btn_sort_tag);
+        Button btnIngredientMatch = rootView.findViewById(R.id.btn_sort_ingredient);
+
+        // 更新按钮文字
+        if (btnTagMatch != null && btnIngredientMatch != null) {
+            btnTagMatch.setText("标签匹配");
+            btnIngredientMatch.setText("食材匹配");
+        }
+
+        if (btnAll != null) {
+            btnAll.setBackgroundColor("all".equals(selectedSortType) ? orangeLight : lightGray);
+            btnAll.setTextColor("all".equals(selectedSortType) ? white : black);
+        }
+
+        if (btnTagMatch != null) {
+            btnTagMatch.setBackgroundColor("tag_match".equals(selectedSortType) ? orangeLight : lightGray);
+            btnTagMatch.setTextColor("tag_match".equals(selectedSortType) ? white : black);
+        }
+
+        if (btnIngredientMatch != null) {
+            btnIngredientMatch.setBackgroundColor("ingredient_match".equals(selectedSortType) ? orangeLight : lightGray);
+            btnIngredientMatch.setTextColor("ingredient_match".equals(selectedSortType) ? white : black);
+        }
     }
 
     private List<RecipeResponse> parseRecipes(Object recipesObj) {
