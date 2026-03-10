@@ -37,7 +37,7 @@ public class Recipe {
     }
 
     public String getTaste() {
-        return taste;
+        return taste != null ? taste : "";
     }
 
     public void setTaste(String taste) {
