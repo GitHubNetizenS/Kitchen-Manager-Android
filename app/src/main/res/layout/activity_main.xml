@@ -83,6 +83,9 @@
             app:itemIconTint="@color/bottom_nav_color"
             app:itemTextColor="@color/bottom_nav_text_color"
             app:itemIconSize="46dp"
+            app:itemTextAppearanceActive="@style/BottomNavTextActive"
+            app:itemTextAppearanceInactive="@style/BottomNavTextInactive"
+            app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />
     </LinearLayout>
 
