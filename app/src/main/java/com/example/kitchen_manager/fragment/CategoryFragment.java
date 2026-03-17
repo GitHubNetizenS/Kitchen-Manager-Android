@@ -4,23 +4,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import android.animation.ObjectAnimator;
+import android.widget.HorizontalScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,7 +29,6 @@ import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
-import com.google.android.material.appbar.AppBarLayout;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -66,23 +59,28 @@ public class CategoryFragment extends Fragment {
     private boolean hasMore = true;
     private final int pageSize = 20;
 
-    // 折叠控件
-    private AppBarLayout appBarLayout;
-    private ImageView ivExpandIndicator;
-    private FrameLayout flExpandContainer;
-    private boolean isExpanded = true;
-
     // 筛选状态
     private Set<String> selectedTastes = new HashSet<>();
     private String selectedMethod = "";
     private String selectedDifficulty = "";
     private String selectedSort = "all"; // 默认综合
 
-    // 按钮映射 (ID 到 值)
-    private Map<Integer, String> tasteButtons = new HashMap<>();
-    private Map<Integer, String> methodButtons = new HashMap<>();
-    private Map<Integer, String> difficultyButtons = new HashMap<>();
-    private Map<Integer, String> sortButtons = new HashMap<>();
+    // 下拉框相关控件
+    private TextView tvSort, tvMethod, tvTaste, tvDifficulty;
+    private ImageView ivFilter;
+    private FrameLayout filterSort, filterMethod, filterTaste, filterDifficulty, filterMore;
+    private View mask;
+    private FrameLayout dropdownContainer;
+    private LinearLayout dropdownSort, dropdownMethod, dropdownTaste, dropdownDifficulty;
+    private HorizontalScrollView hsvSelectedTags;
+    private LinearLayout llSelectedTags;
+
+    // 当前显示的下拉框
+    private View activeDropdown = null;
+    private TextView activeTextView = null;
+
+    // 口味临时选择
+    private Map<String, Boolean> tempTasteSelection = new HashMap<>();
 
     @Nullable
     @Override
@@ -97,19 +95,8 @@ public class CategoryFragment extends Fragment {
         apiService = ApiClient.getApiService();
 
         initViews();
-        setupButtonMaps();
-
-        // 初始化排序按钮文字
-        Button btnTagMatch = rootView.findViewById(R.id.btn_sort_tag);
-        Button btnIngredientMatch = rootView.findViewById(R.id.btn_sort_ingredient);
-        if (btnTagMatch != null && btnIngredientMatch != null) {
-            btnTagMatch.setText("标签匹配");
-            btnIngredientMatch.setText("食材匹配");
-        }
-
         setupListeners();
         setupRecyclerView();
-        setupAppBarListener();
         updateButtonStates();
         loadRecipes();
 
@@ -120,260 +107,438 @@ public class CategoryFragment extends Fragment {
         rvRecipes = rootView.findViewById(R.id.rv_recipes);
         progressBar = rootView.findViewById(R.id.progressBar);
         emptyView = rootView.findViewById(R.id.emptyView);
-        appBarLayout = rootView.findViewById(R.id.app_bar);
-        ivExpandIndicator = rootView.findViewById(R.id.iv_expand_indicator);
-        flExpandContainer = rootView.findViewById(R.id.fl_expand_container);
+
+        // 初始化筛选行控件
+        tvSort = rootView.findViewById(R.id.tv_sort);
+        tvMethod = rootView.findViewById(R.id.tv_method);
+        tvTaste = rootView.findViewById(R.id.tv_taste);
+        tvDifficulty = rootView.findViewById(R.id.tv_difficulty);
+        ivFilter = rootView.findViewById(R.id.iv_filter);
+
+        filterSort = rootView.findViewById(R.id.filter_sort);
+        filterMethod = rootView.findViewById(R.id.filter_method);
+        filterTaste = rootView.findViewById(R.id.filter_taste);
+        filterDifficulty = rootView.findViewById(R.id.filter_difficulty);
+        filterMore = rootView.findViewById(R.id.filter_more);
+
+        // 初始化下拉框相关控件
+        mask = rootView.findViewById(R.id.v_mask);
+        dropdownContainer = rootView.findViewById(R.id.dropdown_container);
+        dropdownSort = rootView.findViewById(R.id.dropdown_sort);
+        dropdownMethod = rootView.findViewById(R.id.dropdown_method);
+        dropdownTaste = rootView.findViewById(R.id.dropdown_taste);
+        dropdownDifficulty = rootView.findViewById(R.id.dropdown_difficulty);
+        hsvSelectedTags = rootView.findViewById(R.id.hsv_selected_tags);
+        llSelectedTags = rootView.findViewById(R.id.ll_selected_tags);
 
         progressBar.setVisibility(View.GONE);
-        emptyView.setVisibility(View.VISIBLE); // 初始显示加载中
+        emptyView.setVisibility(View.VISIBLE);
         rvRecipes.setVisibility(View.VISIBLE);
-    }
-
-    private void setupButtonMaps() {
-        // 口味 (多选)
-        tasteButtons.put(R.id.btn_taste_all, "");
-        tasteButtons.put(R.id.btn_taste_sour, "酸");
-        tasteButtons.put(R.id.btn_taste_sweet, "甜");
-        tasteButtons.put(R.id.btn_taste_bitter, "苦");
-        tasteButtons.put(R.id.btn_taste_spicy, "辣");
-        tasteButtons.put(R.id.btn_taste_salty, "咸");
-        tasteButtons.put(R.id.btn_taste_umami, "鲜");
-
-        // 工艺 (单选) - 注意：现在按钮分布在两行
-        methodButtons.put(R.id.btn_method_all, "");
-        methodButtons.put(R.id.btn_method_fry, "煎");
-        methodButtons.put(R.id.btn_method_stir, "炒");
-        methodButtons.put(R.id.btn_method_boil, "煮");
-        methodButtons.put(R.id.btn_method_deepfry, "炸");
-        methodButtons.put(R.id.btn_method_stew, "炖");
-        methodButtons.put(R.id.btn_method_pickle, "腌");
-        methodButtons.put(R.id.btn_method_roast, "烧");
-        methodButtons.put(R.id.btn_method_mix, "拌");
-        methodButtons.put(R.id.btn_method_other, "其他");
-
-        // 难度 (单选)
-        difficultyButtons.put(R.id.btn_diff_all, "");
-        difficultyButtons.put(R.id.btn_diff_easy, "简单");
-        difficultyButtons.put(R.id.btn_diff_normal, "普通");
-        difficultyButtons.put(R.id.btn_diff_hard, "高级");
-        difficultyButtons.put(R.id.btn_diff_god, "神级");
-
-        // 排序 (单选)
-        sortButtons.put(R.id.btn_sort_all, "all");
-        sortButtons.put(R.id.btn_sort_tag, "tag_match");
-        sortButtons.put(R.id.btn_sort_ingredient, "ingredient_match");
     }
 
     private void setupListeners() {
         if (rootView == null) return;
 
-        // 折叠点击 - 修复点击事件
-        if (flExpandContainer != null) {
-            flExpandContainer.setOnClickListener(v -> {
-                if (isExpanded) {
-                    // 收起筛选栏
-                    appBarLayout.setExpanded(false, true);
-                    isExpanded = false;
-                } else {
-                    // 展开筛选栏
-                    appBarLayout.setExpanded(true, true);
-                    isExpanded = true;
-                }
-                updateExpandIndicator();
-            });
+        // 点击筛选项显示下拉框
+        filterSort.setOnClickListener(v -> showDropdown(dropdownSort, tvSort));
+        filterMethod.setOnClickListener(v -> showDropdown(dropdownMethod, tvMethod));
+        filterTaste.setOnClickListener(v -> showDropdown(dropdownTaste, tvTaste));
+        filterDifficulty.setOnClickListener(v -> showDropdown(dropdownDifficulty, tvDifficulty));
+
+        filterMore.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "更多筛选", Toast.LENGTH_SHORT).show();
+        });
+
+        // 遮罩层点击关闭下拉框
+        mask.setOnClickListener(v -> hideDropdown());
+
+        // 设置排序下拉框监听
+        setupSortDropdownListeners();
+
+        // 设置工艺下拉框监听
+        setupMethodDropdownListeners();
+
+        // 设置口味下拉框监听
+        setupTasteDropdownListeners();
+
+        // 设置难度下拉框监听
+        setupDifficultyDropdownListeners();
+    }
+
+    // 显示下拉框
+    private void showDropdown(LinearLayout dropdown, TextView textView) {
+        if (activeDropdown == dropdown) {
+            hideDropdown();
+            return;
         }
 
-        // 口味按钮（多选）
-        for (Map.Entry<Integer, String> entry : tasteButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                btn.setOnClickListener(v -> handleTasteClick((Button) v));
-            }
-        }
+        hideDropdown();
 
-        // 工艺按钮（单选） - 现在需要从两行中查找
-        for (Map.Entry<Integer, String> entry : methodButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                btn.setOnClickListener(v -> handleSingleSelectClick((Button) v, "method"));
-            }
-        }
+        // 更新箭头方向
+        resetAllArrows();
+        textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
 
-        // 难度按钮（单选）
-        for (Map.Entry<Integer, String> entry : difficultyButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                btn.setOnClickListener(v -> handleSingleSelectClick((Button) v, "difficulty"));
-            }
-        }
+        // 显示遮罩和下拉框
+        mask.setVisibility(View.VISIBLE);
+        dropdownContainer.setVisibility(View.VISIBLE);
+        dropdown.setVisibility(View.VISIBLE);
 
-        // 排序按钮（单选）
-        for (Map.Entry<Integer, String> entry : sortButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                btn.setOnClickListener(v -> handleSingleSelectClick((Button) v, "sort"));
-            }
+        activeDropdown = dropdown;
+        activeTextView = textView;
+
+        // 如果是口味下拉框，初始化临时选择并更新选择状态
+        if (dropdown == dropdownTaste) {
+            initTempTasteSelection();
+            updateTasteDropdownSelection();
         }
     }
 
-    private void setupAppBarListener() {
-        if (appBarLayout != null) {
-            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-                @Override
-                public void onOffsetChanged(AppBarLayout appBarLayout, int verticalOffset) {
-                    int totalScrollRange = appBarLayout.getTotalScrollRange();
-                    if (totalScrollRange > 0) {
-                        // 计算折叠百分比
-                        float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
+    // 隐藏下拉框
+    private void hideDropdown() {
+        mask.setVisibility(View.GONE);
+        dropdownContainer.setVisibility(View.GONE);
 
-                        // 判断是否状态改变
-                        boolean newExpandedState = percentage < 0.5f;
-                        if (newExpandedState != isExpanded) {
-                            isExpanded = newExpandedState;
-                            // 使用动画更新指示器
-                            updateExpandIndicator();
-                        }
-                    }
-                }
-            });
-        }
+        if (dropdownSort != null) dropdownSort.setVisibility(View.GONE);
+        if (dropdownMethod != null) dropdownMethod.setVisibility(View.GONE);
+        if (dropdownTaste != null) dropdownTaste.setVisibility(View.GONE);
+        if (dropdownDifficulty != null) dropdownDifficulty.setVisibility(View.GONE);
+
+        resetAllArrows();
+
+        activeDropdown = null;
+        activeTextView = null;
     }
 
-    private void updateIndicatorAngleWithoutAnimation() {
-        if (ivExpandIndicator != null) {
-            ivExpandIndicator.clearAnimation();
-            ivExpandIndicator.setRotation(isExpanded ? 0 : 180);
-        }
+    // 重置所有箭头
+    private void resetAllArrows() {
+        tvSort.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
+        tvMethod.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
+        tvTaste.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
+        tvDifficulty.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
     }
 
-    private void updateExpandIndicator() {
-        if (ivExpandIndicator != null) {
-            // 使用 ObjectAnimator 实现平滑旋转
-            ObjectAnimator rotation = ObjectAnimator.ofFloat(
-                    ivExpandIndicator,
-                    "rotation",
-                    ivExpandIndicator.getRotation(),
-                    isExpanded ? 0 : 180
-            );
-            rotation.setDuration(300);
-            rotation.start();
+    // 更新已选标签
+    private void updateSelectedTags() {
+        if (llSelectedTags == null) return;
+
+        llSelectedTags.removeAllViews();
+
+        boolean hasSelection = false;
+
+        // 添加口味标签
+        for (String taste : selectedTastes) {
+            addTagView(taste, "taste");
+            hasSelection = true;
         }
+
+        // 添加工艺标签
+        if (!selectedMethod.isEmpty() && !selectedMethod.equals("")) {
+            addTagView(selectedMethod, "method");
+            hasSelection = true;
+        }
+
+        // 添加难度标签
+        if (!selectedDifficulty.isEmpty() && !selectedDifficulty.equals("")) {
+            addTagView(selectedDifficulty, "difficulty");
+            hasSelection = true;
+        }
+
+        hsvSelectedTags.setVisibility(hasSelection ? View.VISIBLE : View.GONE);
     }
 
+    // 添加标签视图
+    private void addTagView(String text, String type) {
+        TextView tag = new TextView(getContext());
+        tag.setText(text);
+        tag.setTextSize(12);
+        tag.setTextColor(getResources().getColor(R.color.orange));
+        tag.setPadding(16, 6, 16, 6);
+        tag.setBackgroundResource(R.drawable.bg_selected_tag);
 
-    private void handleTasteClick(Button btn) {
-        String value = tasteButtons.get(btn.getId());
-        if (value == null) return;
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 0, 8, 0);
+        tag.setLayoutParams(params);
 
-        if (value.isEmpty()) { // "全部"
-            if (selectedTastes.isEmpty()) {
-                return; // 已为全部，不响应
+        // 点击移除
+        tag.setOnClickListener(v -> {
+            switch (type) {
+                case "taste":
+                    selectedTastes.remove(text);
+                    break;
+                case "method":
+                    selectedMethod = "";
+                    break;
+                case "difficulty":
+                    selectedDifficulty = "";
+                    break;
             }
-            selectedTastes.clear();
-        } else {
-            if (selectedTastes.contains(value)) {
-                selectedTastes.remove(value);
-            } else {
-                selectedTastes.add(value);
-            }
-        }
-        updateButtonStates();
-        resetAndLoad();
-    }
-
-    private void handleSingleSelectClick(Button btn, String type) {
-        String value = getButtonValue(btn.getId(), type);
-        if (value == null) return;
-
-        boolean changed = false;
-        switch (type) {
-            case "method":
-                if (value.equals(selectedMethod)) return;
-                selectedMethod = value;
-                changed = true;
-                break;
-            case "difficulty":
-                if (value.equals(selectedDifficulty)) return;
-                selectedDifficulty = value;
-                changed = true;
-                break;
-            case "sort":
-                if (value.equals(selectedSort)) return;
-                selectedSort = value;
-                changed = true;
-                // 排序改变时也需要更新按钮状态
-                updateSortButtonState(value);
-                break;
-        }
-        if (changed) {
             updateButtonStates();
-            resetAndLoad(); // 重新加载数据
+            updateSelectedTags();
+            resetAndLoad();
+        });
+
+        llSelectedTags.addView(tag);
+    }
+
+    // 设置排序下拉框监听
+    private void setupSortDropdownListeners() {
+        rootView.findViewById(R.id.dropdown_sort_all).setOnClickListener(v -> {
+            selectedSort = "all";
+            tvSort.setText("综合");
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_sort_ingredient).setOnClickListener(v -> {
+            selectedSort = "ingredient_match";
+            tvSort.setText("食材匹配");
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_sort_tag).setOnClickListener(v -> {
+            selectedSort = "tag_match";
+            tvSort.setText("标签匹配");
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+    }
+
+    // 设置工艺下拉框监听
+    private void setupMethodDropdownListeners() {
+        rootView.findViewById(R.id.dropdown_method_all).setOnClickListener(v -> {
+            selectedMethod = "";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_fry).setOnClickListener(v -> {
+            selectedMethod = "煎";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_stir).setOnClickListener(v -> {
+            selectedMethod = "炒";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_boil).setOnClickListener(v -> {
+            selectedMethod = "煮";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_deepfry).setOnClickListener(v -> {
+            selectedMethod = "炸";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_stew).setOnClickListener(v -> {
+            selectedMethod = "炖";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_pickle).setOnClickListener(v -> {
+            selectedMethod = "腌";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_roast).setOnClickListener(v -> {
+            selectedMethod = "烧";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_mix).setOnClickListener(v -> {
+            selectedMethod = "拌";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_method_other).setOnClickListener(v -> {
+            selectedMethod = "其他";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+    }
+
+    // 设置口味下拉框监听
+    private void setupTasteDropdownListeners() {
+        rootView.findViewById(R.id.dropdown_taste_all).setOnClickListener(v -> {
+            tempTasteSelection.clear();
+            updateTasteDropdownSelection();
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_sour).setOnClickListener(v -> {
+            toggleTasteSelection("酸");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_sweet).setOnClickListener(v -> {
+            toggleTasteSelection("甜");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_bitter).setOnClickListener(v -> {
+            toggleTasteSelection("苦");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_spicy).setOnClickListener(v -> {
+            toggleTasteSelection("辣");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_salty).setOnClickListener(v -> {
+            toggleTasteSelection("咸");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_umami).setOnClickListener(v -> {
+            toggleTasteSelection("鲜");
+        });
+
+        rootView.findViewById(R.id.dropdown_taste_confirm).setOnClickListener(v -> {
+            // 应用口味选择
+            selectedTastes.clear();
+            selectedTastes.addAll(tempTasteSelection.keySet());
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+    }
+
+    // 设置难度下拉框监听
+    private void setupDifficultyDropdownListeners() {
+        rootView.findViewById(R.id.dropdown_diff_all).setOnClickListener(v -> {
+            selectedDifficulty = "";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_diff_easy).setOnClickListener(v -> {
+            selectedDifficulty = "简单";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_diff_normal).setOnClickListener(v -> {
+            selectedDifficulty = "普通";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_diff_hard).setOnClickListener(v -> {
+            selectedDifficulty = "高级";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+
+        rootView.findViewById(R.id.dropdown_diff_god).setOnClickListener(v -> {
+            selectedDifficulty = "神级";
+            hideDropdown();
+            updateButtonStates();
+            resetAndLoad();
+        });
+    }
+
+    // 初始化口味临时选择
+    private void initTempTasteSelection() {
+        tempTasteSelection.clear();
+        for (String taste : selectedTastes) {
+            tempTasteSelection.put(taste, true);
         }
     }
 
-    private String getButtonValue(int buttonId, String type) {
-        switch (type) {
-            case "method": return methodButtons.get(buttonId);
-            case "difficulty": return difficultyButtons.get(buttonId);
-            case "sort": return sortButtons.get(buttonId);
-            case "taste": return tasteButtons.get(buttonId);
-            default: return null;
+    // 切换口味选择
+    private void toggleTasteSelection(String taste) {
+        if (tempTasteSelection.containsKey(taste)) {
+            tempTasteSelection.remove(taste);
+        } else {
+            tempTasteSelection.put(taste, true);
+        }
+        updateTasteDropdownSelection();
+    }
+
+    // 更新口味下拉框选择状态
+    private void updateTasteDropdownSelection() {
+        TextView tvAll = rootView.findViewById(R.id.dropdown_taste_all);
+        TextView tvSour = rootView.findViewById(R.id.dropdown_taste_sour);
+        TextView tvSweet = rootView.findViewById(R.id.dropdown_taste_sweet);
+        TextView tvBitter = rootView.findViewById(R.id.dropdown_taste_bitter);
+        TextView tvSpicy = rootView.findViewById(R.id.dropdown_taste_spicy);
+        TextView tvSalty = rootView.findViewById(R.id.dropdown_taste_salty);
+        TextView tvUmami = rootView.findViewById(R.id.dropdown_taste_umami);
+
+        // 更新选择状态
+        updateTasteItemSelection(tvAll, tempTasteSelection.isEmpty());
+        updateTasteItemSelection(tvSour, tempTasteSelection.containsKey("酸"));
+        updateTasteItemSelection(tvSweet, tempTasteSelection.containsKey("甜"));
+        updateTasteItemSelection(tvBitter, tempTasteSelection.containsKey("苦"));
+        updateTasteItemSelection(tvSpicy, tempTasteSelection.containsKey("辣"));
+        updateTasteItemSelection(tvSalty, tempTasteSelection.containsKey("咸"));
+        updateTasteItemSelection(tvUmami, tempTasteSelection.containsKey("鲜"));
+    }
+
+    // 更新口味项选择状态
+    private void updateTasteItemSelection(TextView tv, boolean selected) {
+        tv.setSelected(selected);
+        if (selected) {
+            tv.setTextColor(getResources().getColor(R.color.orange));
+            tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_check, 0);
+        } else {
+            tv.setTextColor(getResources().getColor(android.R.color.black));
+            tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        }
+    }
+
+    // 获取排序文本
+    private String getSortText(String sort) {
+        switch (sort) {
+            case "all": return "综合";
+            case "ingredient_match": return "食材匹配";
+            case "tag_match": return "标签匹配";
+            default: return "综合";
         }
     }
 
     private void updateButtonStates() {
         if (rootView == null) return;
 
-        // 更新口味按钮 - 多选逻辑
-        boolean hasSelectedTaste = !selectedTastes.isEmpty();
-        for (Map.Entry<Integer, String> entry : tasteButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                String value = entry.getValue();
-                boolean selected;
-                if (value.isEmpty()) {
-                    // "全部"按钮：当没有任何具体口味被选中时选中
-                    selected = !hasSelectedTaste;
-                } else {
-                    // 具体口味按钮：如果在选中集合中
-                    selected = selectedTastes.contains(value);
-                }
-                updateButtonStyle(btn, selected);
-            }
-        }
-
-        // 更新工艺按钮 - 单选逻辑
-        for (Map.Entry<Integer, String> entry : methodButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                String value = entry.getValue();
-                boolean selected = value.equals(selectedMethod);
-                updateButtonStyle(btn, selected);
-            }
-        }
-
-        // 更新难度按钮 - 单选逻辑
-        for (Map.Entry<Integer, String> entry : difficultyButtons.entrySet()) {
-            Button btn = rootView.findViewById(entry.getKey());
-            if (btn != null) {
-                String value = entry.getValue();
-                boolean selected = value.equals(selectedDifficulty);
-                updateButtonStyle(btn, selected);
-            }
-        }
-
-        // 更新排序按钮状态（使用新方法）
-        updateSortButtonState(selectedSort);
-    }
-
-    private void updateButtonStyle(Button btn, boolean selected) {
-        if (selected) {
-            btn.setBackgroundResource(R.drawable.bg_tag_selected);
-            btn.setTextColor(getResources().getColor(android.R.color.white));
+        // 更新显示文本
+        if (!selectedTastes.isEmpty()) {
+            tvTaste.setText(selectedTastes.iterator().next() +
+                    (selectedTastes.size() > 1 ? "等" + selectedTastes.size() + "种" : ""));
         } else {
-            btn.setBackgroundResource(R.drawable.bg_tag_normal);
-            btn.setTextColor(getResources().getColor(R.color.gray));
+            tvTaste.setText("口味");
         }
+
+        tvMethod.setText(selectedMethod.isEmpty() ? "工艺" : selectedMethod);
+        tvDifficulty.setText(selectedDifficulty.isEmpty() ? "难度" : selectedDifficulty);
+        tvSort.setText(getSortText(selectedSort));
+
+        // 更新已选标签
+        updateSelectedTags();
     }
 
     /**
@@ -394,11 +559,9 @@ public class CategoryFragment extends Fragment {
                     ApiResponse<Void> apiResponse = response.body();
 
                     if (apiResponse.getCode() == 200) {
-                        // 收藏成功，更新本地状态
                         updateLocalFavoriteStatus(recipeId, true);
                         Toast.makeText(requireContext(), "收藏成功", Toast.LENGTH_SHORT).show();
                     } else if (apiResponse.getCode() == 409) {
-                        // 重复收藏
                         updateLocalFavoriteStatus(recipeId, true);
                         Toast.makeText(requireContext(), "您已经收藏过这个菜谱", Toast.LENGTH_SHORT).show();
                     } else {
@@ -440,7 +603,6 @@ public class CategoryFragment extends Fragment {
                     ApiResponse<Void> apiResponse = response.body();
 
                     if (apiResponse.getCode() == 200) {
-                        // 取消收藏成功，更新本地状态
                         updateLocalFavoriteStatus(recipeId, false);
                         Toast.makeText(requireContext(), "已取消收藏", Toast.LENGTH_SHORT).show();
                     } else {
@@ -482,7 +644,6 @@ public class CategoryFragment extends Fragment {
                     ApiResponse<Void> apiResponse = response.body();
 
                     if (apiResponse.getCode() == 200) {
-                        // 切换成功，需要重新检查购物车状态
                         checkCartStatus(recipeId);
                         Toast.makeText(requireContext(), apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
                     } else {
@@ -610,11 +771,9 @@ public class CategoryFragment extends Fragment {
                     loadRecipes();
                 }
 
-                // 自动收起功能：当向下滑动时，如果筛选栏是展开的，则自动收起
-                if (dy > 10 && isExpanded) { // dy > 10 表示向下滑动
-                    appBarLayout.setExpanded(false, true);
-                    isExpanded = false;
-                    updateExpandIndicator();
+                // 滑动时隐藏下拉框
+                if (dy != 0 && activeDropdown != null) {
+                    hideDropdown();
                 }
             }
         });
@@ -635,12 +794,11 @@ public class CategoryFragment extends Fragment {
         // 构建口味参数：使用逗号分隔多个口味
         String tasteParam = String.join(",", selectedTastes);
 
-        // 确保使用正确的排序参数
         Call<ApiResponse<Map<String, Object>>> call = apiService.getFilteredRecipes(
                 tasteParam.isEmpty() ? "" : tasteParam,
                 selectedMethod,
                 selectedDifficulty,
-                selectedSort, // 添加sort参数
+                selectedSort,
                 userId,
                 currentPage,
                 pageSize);
@@ -657,7 +815,6 @@ public class CategoryFragment extends Fragment {
                         Map<String, Object> data = apiResponse.getData();
                         List<RecipeResponse> newRecipes = parseRecipes(data.get("recipes"));
 
-                        // 从data中获取总数和分页信息
                         int total = 0;
                         if (data.containsKey("total_count")) {
                             total = ((Number) data.get("total_count")).intValue();
@@ -702,41 +859,6 @@ public class CategoryFragment extends Fragment {
         });
     }
 
-
-    private void updateSortButtonState(String selectedSortType) {
-        if (rootView == null) return;
-
-        int orangeLight = getResources().getColor(R.color.orange_light);
-        int lightGray = getResources().getColor(R.color.light_gray);
-        int white = getResources().getColor(android.R.color.white);
-        int black = getResources().getColor(android.R.color.black);
-
-        Button btnAll = rootView.findViewById(R.id.btn_sort_all);
-        Button btnTagMatch = rootView.findViewById(R.id.btn_sort_tag);
-        Button btnIngredientMatch = rootView.findViewById(R.id.btn_sort_ingredient);
-
-        // 更新按钮文字
-        if (btnTagMatch != null && btnIngredientMatch != null) {
-            btnTagMatch.setText("标签匹配");
-            btnIngredientMatch.setText("食材匹配");
-        }
-
-        if (btnAll != null) {
-            btnAll.setBackgroundColor("all".equals(selectedSortType) ? orangeLight : lightGray);
-            btnAll.setTextColor("all".equals(selectedSortType) ? white : black);
-        }
-
-        if (btnTagMatch != null) {
-            btnTagMatch.setBackgroundColor("tag_match".equals(selectedSortType) ? orangeLight : lightGray);
-            btnTagMatch.setTextColor("tag_match".equals(selectedSortType) ? white : black);
-        }
-
-        if (btnIngredientMatch != null) {
-            btnIngredientMatch.setBackgroundColor("ingredient_match".equals(selectedSortType) ? orangeLight : lightGray);
-            btnIngredientMatch.setTextColor("ingredient_match".equals(selectedSortType) ? white : black);
-        }
-    }
-
     private List<RecipeResponse> parseRecipes(Object recipesObj) {
         if (recipesObj instanceof List) {
             Gson gson = new Gson();
@@ -749,7 +871,6 @@ public class CategoryFragment extends Fragment {
             for (Map<String, Object> recipeMap : recipeMaps) {
                 RecipeResponse recipe = new RecipeResponse();
 
-                // 设置基本字段
                 if (recipeMap.containsKey("recipe_id")) {
                     recipe.setRecipeId(((Number) recipeMap.get("recipe_id")).intValue());
                 }
@@ -775,7 +896,6 @@ public class CategoryFragment extends Fragment {
                     recipe.setNeeds((String) recipeMap.get("needs"));
                 }
 
-                // 处理收藏状态（可能是数字或布尔值）
                 if (recipeMap.containsKey("isFavorite")) {
                     Object favoriteObj = recipeMap.get("isFavorite");
                     if (favoriteObj instanceof Boolean) {
@@ -785,7 +905,6 @@ public class CategoryFragment extends Fragment {
                     }
                 }
 
-                // 处理购物车状态（可能是数字或布尔值）
                 if (recipeMap.containsKey("inShoppingCart")) {
                     Object cartObj = recipeMap.get("inShoppingCart");
                     if (cartObj instanceof Boolean) {
