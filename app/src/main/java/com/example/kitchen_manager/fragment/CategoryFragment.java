@@ -1,5 +1,6 @@
 package com.example.kitchen_manager.fragment;
 
+import android.graphics.Rect;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -67,8 +68,8 @@ public class CategoryFragment extends Fragment {
 
     // 下拉框相关控件
     private TextView tvSort, tvMethod, tvTaste, tvDifficulty;
-    private ImageView ivFilter;
-    private FrameLayout filterSort, filterMethod, filterTaste, filterDifficulty, filterMore;
+    private TextView tvReset; // 改为重置按钮
+    private FrameLayout filterSort, filterMethod, filterTaste, filterDifficulty, filterReset; // 改为 filterReset
     private View mask;
     private FrameLayout dropdownContainer;
     private LinearLayout dropdownSort, dropdownMethod, dropdownTaste, dropdownDifficulty;
@@ -113,13 +114,13 @@ public class CategoryFragment extends Fragment {
         tvMethod = rootView.findViewById(R.id.tv_method);
         tvTaste = rootView.findViewById(R.id.tv_taste);
         tvDifficulty = rootView.findViewById(R.id.tv_difficulty);
-        ivFilter = rootView.findViewById(R.id.iv_filter);
+        tvReset = rootView.findViewById(R.id.tv_reset); // 改为 tvReset
 
         filterSort = rootView.findViewById(R.id.filter_sort);
         filterMethod = rootView.findViewById(R.id.filter_method);
         filterTaste = rootView.findViewById(R.id.filter_taste);
         filterDifficulty = rootView.findViewById(R.id.filter_difficulty);
-        filterMore = rootView.findViewById(R.id.filter_more);
+        filterReset = rootView.findViewById(R.id.filter_reset); // 改为 filterReset
 
         // 初始化下拉框相关控件
         mask = rootView.findViewById(R.id.v_mask);
@@ -145,9 +146,8 @@ public class CategoryFragment extends Fragment {
         filterTaste.setOnClickListener(v -> showDropdown(dropdownTaste, tvTaste));
         filterDifficulty.setOnClickListener(v -> showDropdown(dropdownDifficulty, tvDifficulty));
 
-        filterMore.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "更多筛选", Toast.LENGTH_SHORT).show();
-        });
+        // 重置按钮点击事件
+        filterReset.setOnClickListener(v -> resetAllFilters());
 
         // 遮罩层点击关闭下拉框
         mask.setOnClickListener(v -> hideDropdown());
@@ -165,6 +165,28 @@ public class CategoryFragment extends Fragment {
         setupDifficultyDropdownListeners();
     }
 
+    /**
+     * 重置所有筛选条件
+     */
+    private void resetAllFilters() {
+        // 重置所有筛选条件为默认值
+        selectedTastes.clear();
+        selectedMethod = "";
+        selectedDifficulty = "";
+        selectedSort = "all";
+
+        // 更新按钮显示状态
+        updateButtonStates();
+
+        // 隐藏下拉框（如果有打开的）
+        hideDropdown();
+
+        // 重置并重新加载数据
+        resetAndLoad();
+
+        Toast.makeText(getContext(), "已重置所有筛选条件", Toast.LENGTH_SHORT).show();
+    }
+
     // 显示下拉框
     private void showDropdown(LinearLayout dropdown, TextView textView) {
         if (activeDropdown == dropdown) {
@@ -176,12 +198,16 @@ public class CategoryFragment extends Fragment {
 
         // 更新箭头方向
         resetAllArrows();
-        textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
+        textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_up, 0);
 
         // 显示遮罩和下拉框
         mask.setVisibility(View.VISIBLE);
         dropdownContainer.setVisibility(View.VISIBLE);
         dropdown.setVisibility(View.VISIBLE);
+
+        // 确保下拉框在遮罩层之上
+        dropdownContainer.bringToFront();
+        dropdown.bringToFront();
 
         activeDropdown = dropdown;
         activeTextView = textView;
@@ -208,6 +234,7 @@ public class CategoryFragment extends Fragment {
         activeDropdown = null;
         activeTextView = null;
     }
+
 
     // 重置所有箭头
     private void resetAllArrows() {
@@ -244,6 +271,11 @@ public class CategoryFragment extends Fragment {
         }
 
         hsvSelectedTags.setVisibility(hasSelection ? View.VISIBLE : View.GONE);
+
+        // 刷新RecyclerView，更新第一个item的边距
+        if (rvRecipes != null && rvRecipes.getAdapter() != null) {
+            rvRecipes.getAdapter().notifyItemChanged(0);
+        }
     }
 
     // 添加标签视图
@@ -724,6 +756,7 @@ public class CategoryFragment extends Fragment {
         }
     }
 
+
     private void setupRecyclerView() {
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 1);
         rvRecipes.setLayoutManager(layoutManager);
@@ -759,6 +792,36 @@ public class CategoryFragment extends Fragment {
         }, RecipeAdapter.PAGE_TYPE_NORMAL);
         rvRecipes.setAdapter(adapter);
 
+        // 添加一个透明的占位视图，确保第一个item不会被头部遮挡
+        rvRecipes.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                                       @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                // 注意：这里不要调用 super.getItemOffsets()
+
+                // 为第一个item添加顶部边距，避免被已选标签遮挡
+                int position = parent.getChildAdapterPosition(view);
+                if (position == 0) {
+                    // 获取已选标签的高度
+                    if (hsvSelectedTags != null && hsvSelectedTags.getVisibility() == View.VISIBLE) {
+                        // 如果已选标签可见，增加额外的边距
+                        int tagHeight = hsvSelectedTags.getHeight();
+                        if (tagHeight == 0) {
+                            // 如果高度还没测量，使用一个默认值
+                            tagHeight = dpToPx(30); // 默认30dp
+                        }
+                        outRect.top = tagHeight;
+                    } else {
+                        // 如果没有已选标签，添加一个较小的边距
+                        outRect.top = dpToPx(2); // 2dp的间距
+                    }
+                } else {
+                    // 非第一个item，添加一个较小的底部边距用于间隔
+                    outRect.bottom = dpToPx(4);
+                }
+            }
+        });
+
         rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -778,6 +841,14 @@ public class CategoryFragment extends Fragment {
             }
         });
     }
+
+    // 添加一个工具方法，将dp转换为px
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+
 
     private void resetAndLoad() {
         currentPage = 1;
