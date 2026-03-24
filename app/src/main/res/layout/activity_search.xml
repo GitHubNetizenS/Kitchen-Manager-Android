@@ -149,5 +149,16 @@
             android:visibility="gone" />
 
         <!-- 空状态视图 -->
+        <!-- 在 </FrameLayout> 之前添加 -->
+        <TextView
+            android:id="@+id/emptyView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="100dp"
+            android:text="暂无搜索结果"
+            android:textColor="#999999"
+            android:textSize="16sp"
+            android:visibility="gone" />
     </FrameLayout>
 </androidx.core.widget.NestedScrollView>
