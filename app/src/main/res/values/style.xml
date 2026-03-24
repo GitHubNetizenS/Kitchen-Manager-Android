@@ -13,4 +13,15 @@
         <item name="android:paddingStart">8dp</item>
         <item name="android:paddingLeft">8dp</item>
     </style>
+    <!-- 选中的文字样式 -->
+    <style name="BottomNavTextActive">
+        <item name="android:textSize">12sp</item>  <!-- 选中时文字大小 -->
+        <item name="android:textColor">#FF9800</item>  <!-- 选中时文字颜色（橘色） -->
+    </style>
+
+    <!-- 未选中的文字样式 -->
+    <style name="BottomNavTextInactive">
+        <item name="android:textSize">10sp</item>  <!-- 未选中时文字大小 -->
+        <item name="android:textColor">#FF9800</item>  <!-- 未选中时文字颜色（灰色） -->
+    </style>
 </resources>
