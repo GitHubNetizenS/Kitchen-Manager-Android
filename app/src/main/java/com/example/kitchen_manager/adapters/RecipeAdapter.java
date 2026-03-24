@@ -321,16 +321,14 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         });
 
         // 设置整个项目的点击事件（用于查看详情）
-        holder.overlayClickArea.setOnClickListener(v -> {
-            if (isSelectionMode || (pageType != PAGE_TYPE_NORMAL && isEditMode)) {
-                // 在选择模式或编辑模式下，点击切换选择状态
-                toggleSelection(position);
-            } else {
-                // 正常模式下，点击查看详情
-                if (listener != null) {
-                    listener.onDetailClick(recipe.getRecipeId());
-                }
+        holder.itemView.setOnLongClickListener(v -> {
+            if (!isSelectionMode && pageType == PAGE_TYPE_NORMAL) {
+                isSelectionMode = true;
+                selectedItems.add(position);
+                notifyDataSetChanged();
+                return true;
             }
+            return false;
         });
 
         // 设置整个项目的长按事件（用于进入选择模式）

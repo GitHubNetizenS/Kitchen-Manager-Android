@@ -1,94 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="2dp">
 
+        <!-- 复选框：仅在编辑模式下显示 -->
         <CheckBox
             android:id="@+id/cb_select"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone" />
 
-        <!--菜谱图片-->
+        <!-- 菜谱图片：高度自适应，保持宽高比 -->
         <ImageView
             android:id="@+id/iv_recipe_image"
             android:layout_width="match_parent"
-            android:layout_height="300dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
             android:scaleType="centerCrop"
             android:src="@drawable/placeholder" />
-
-        <!-- 菜谱名称（加粗）-->
 
         <!-- 第一行：口味、方法、时间、难度 -->
         <TextView
             android:id="@+id/tv_recipe_attributes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="2dp"
+            android:padding="4dp"
             android:layout_marginTop="4dp"
             android:maxLines="1"
             android:text="特点"
             android:textColor="#FF8C00"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <!-- 第二行：原料/烹饪时间 -->
         <TextView
             android:id="@+id/tv_recipe_needs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="2dp"
-            android:layout_marginTop="4dp"
+            android:padding="4dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="原料"
             android:textColor="#616161"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
+        <!-- 底部行：菜名 + 操作图标 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="29dp"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="2dp">
-
+            android:padding="4dp"
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tv_recipe_name"
-                android:layout_width="259dp"
-                android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:text="菜谱名称"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/iv_favorite"
-                android:layout_width="29dp"
-                android:layout_height="match_parent"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:padding="4dp"
                 android:contentDescription="收藏"
-                app:srcCompat="@drawable/buylist" />
+                app:srcCompat="@drawable/ic_favorite_border" />
 
             <ImageView
                 android:id="@+id/iv_buy"
-                android:layout_width="41dp"
-                android:layout_height="match_parent"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:padding="4dp"
                 android:contentDescription="购物车"
-                app:srcCompat="@drawable/ic_favorite_border" />
+                app:srcCompat="@drawable/buylist" />
         </LinearLayout>
-    </LinearLayout>
 
-    <View
-        android:id="@+id/overlay_click_area"
-        android:layout_width="match_parent"
-        android:layout_height="347dp"
-        android:background="@android:color/transparent" />
-</FrameLayout>
+        <!-- 透明点击区域，用于接收点击事件（可选，如果点击事件交给 CardView 则可以去掉） -->
+        <View
+            android:id="@+id/overlay_click_area"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

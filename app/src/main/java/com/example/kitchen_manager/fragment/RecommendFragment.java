@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.bumptech.glide.Glide;
 import com.example.kitchen_manager.R;
@@ -120,7 +121,7 @@ public class RecommendFragment extends Fragment {
         btnOther.setOnClickListener(categoryClickListener);
         btnSnack.setOnClickListener(categoryClickListener);
 
-        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 2);
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         rvRecipes.setLayoutManager(layoutManager);
 
         rvRecipes.setHasFixedSize(true);
@@ -166,8 +167,15 @@ public class RecommendFragment extends Fragment {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (dy <= 0 || isLoading || !hasMore) return;
 
-                int lastVisible =
-                        layoutManager.findLastVisibleItemPosition();
+                // 获取瀑布流布局管理器
+                StaggeredGridLayoutManager layoutManager = (StaggeredGridLayoutManager) recyclerView.getLayoutManager();
+                // 获取所有列的最后可见项位置（数组）
+                int[] lastVisiblePositions = layoutManager.findLastVisibleItemPositions(null);
+                // 取最大值作为最后可见项
+                int lastVisible = -1;
+                for (int pos : lastVisiblePositions) {
+                    if (pos > lastVisible) lastVisible = pos;
+                }
                 int total = layoutManager.getItemCount();
 
                 if (lastVisible >= total - PRELOAD_THRESHOLD) {
