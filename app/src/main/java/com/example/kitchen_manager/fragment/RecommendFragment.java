@@ -157,7 +157,7 @@ public class RecommendFragment extends Fragment {
                         toggleCart(recipeId);
                     }
                 },
-                RecipeAdapter.PAGE_TYPE_NORMAL
+                RecipeAdapter.PAGE_TYPE_RECOMMEND
         );
 
         rvRecipes.setAdapter(adapter);

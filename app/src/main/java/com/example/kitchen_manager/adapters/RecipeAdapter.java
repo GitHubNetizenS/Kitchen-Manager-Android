@@ -36,9 +36,10 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         void onCartClick(int recipeId, boolean isCurrentlyInCart);
     }
 
-    public static final int PAGE_TYPE_NORMAL = 0;
-    public static final int PAGE_TYPE_FAVORITE = 1;
-    public static final int PAGE_TYPE_HISTORY = 2;
+    public static final int PAGE_TYPE_NORMAL = 0;      // 普通页（分类页等）使用 item_recipe.xml
+    public static final int PAGE_TYPE_FAVORITE = 1;    // 收藏页使用 item_recipe.xml
+    public static final int PAGE_TYPE_HISTORY = 2;     // 历史页使用 item_recipe.xml
+    public static final int PAGE_TYPE_RECOMMEND = 3;   // 推荐页使用 item_recipe_recommend.xml
 
     private Context context;
     private List<RecipeResponse> recipeList;
@@ -218,10 +219,25 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         return cleaned;
     }
 
+    /**
+     * 判断是否使用推荐页样式（瀑布流卡片样式）
+     */
+    private boolean isRecommendStyle() {
+        return pageType == PAGE_TYPE_RECOMMEND;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_recipe_recommend, parent, false);
+        int layoutId;
+        if (isRecommendStyle()) {
+            // 推荐页使用瀑布流卡片样式
+            layoutId = R.layout.item_recipe_recommend;
+        } else {
+            // 其他页面（分类页、收藏页、历史页）使用水平卡片样式
+            layoutId = R.layout.item_recipe;
+        }
+        View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
         return new ViewHolder(view);
     }
 
@@ -229,10 +245,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RecipeResponse recipe = recipeList.get(position);
 
-        // 设置选择模式可见性 - 根据不同的页面类型调整
+        boolean isRecommend = isRecommendStyle();
+
+        // 设置选择模式可见性
         if (pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) {
             holder.cbSelect.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
-            // 根据页面类型选择正确的ID
             int targetId = (pageType == PAGE_TYPE_HISTORY) ? recipe.getHistoryId() : recipe.getRecipeId();
             holder.cbSelect.setChecked(selectedIds.contains(targetId));
         } else {
@@ -256,23 +273,19 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         if (pageType == PAGE_TYPE_HISTORY && recipe.getCookTime() != null) {
             displayText = "上次烹饪时间: " + recipe.getCookTime();
         } else {
-            // 使用格式化后的原料字符串
             String needs = recipe.getNeeds();
             String formattedNeeds = formatNeeds(needs);
             displayText = "原料: " + formattedNeeds;
         }
         holder.tvRecipeNeeds.setText(displayText);
 
-        // 设置菜谱图片 - 使用Glide优化
+        // 设置菜谱图片
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
-            // 构造完整的图片URL
             String fullImageUrl = recipe.getImageUrl();
             if (!recipe.getImageUrl().startsWith("http")) {
-                // 如果是相对路径，添加基础URL
                 fullImageUrl = "http://10.0.2.2:8080" + (recipe.getImageUrl().startsWith("/") ? "" : "/") + recipe.getImageUrl();
             }
 
-            // 使用Glide进行图片加载和缓存
             Glide.with(context)
                     .load(fullImageUrl)
                     .placeholder(R.drawable.placeholder)
@@ -291,17 +304,16 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
             holder.ivFavorite.setImageResource(R.drawable.ic_favorite_border);
         }
 
-        // 设置购物车图标状态 - 关键修改点：根据购物车状态显示不同图标
+        // 设置购物车图标状态
         if (recipe.isInShoppingCart()) {
-            holder.ivCart.setImageResource(R.drawable.buylist_1); // 已加入购物车
+            holder.ivCart.setImageResource(R.drawable.buylist_1);
         } else {
-            holder.ivCart.setImageResource(R.drawable.buylist); // 未加入购物车
+            holder.ivCart.setImageResource(R.drawable.buylist);
         }
 
         // 设置收藏图标点击事件
         holder.ivFavorite.setOnClickListener(v -> {
             if (listener != null) {
-                // 在编辑模式下，点击收藏图标不触发收藏/取消收藏
                 if ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode) {
                     return;
                 }
@@ -312,7 +324,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         // 设置购物车图标点击事件
         holder.ivCart.setOnClickListener(v -> {
             if (listener != null) {
-                // 在编辑模式下，点击购物车图标不触发操作
                 if ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode) {
                     return;
                 }
@@ -321,38 +332,53 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
         });
 
         // 设置整个项目的点击事件（用于查看详情）
-        holder.itemView.setOnLongClickListener(v -> {
-            if (!isSelectionMode && pageType == PAGE_TYPE_NORMAL) {
-                isSelectionMode = true;
-                selectedItems.add(position);
-                notifyDataSetChanged();
-                return true;
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                // 在选择模式下不触发详情点击
+                if ((pageType == PAGE_TYPE_NORMAL && isSelectionMode) ||
+                        ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode)) {
+                    return;
+                }
+                listener.onDetailClick(recipe.getRecipeId());
             }
-            return false;
         });
 
-        // 设置整个项目的长按事件（用于进入选择模式）
-        holder.overlayClickArea.setOnLongClickListener(v -> {
-            if (!isSelectionMode && pageType == PAGE_TYPE_NORMAL) {
-                isSelectionMode = true;
-                selectedItems.add(position);
-                notifyDataSetChanged();
-                return true;
-            }
-            return false;
-        });
+        // 设置长按事件（用于进入选择模式）- 仅普通页支持
+        if (pageType == PAGE_TYPE_NORMAL) {
+            holder.itemView.setOnLongClickListener(v -> {
+                if (!isSelectionMode) {
+                    isSelectionMode = true;
+                    selectedItems.add(position);
+                    notifyDataSetChanged();
+                    return true;
+                }
+                return false;
+            });
+        }
 
         // 设置复选框点击事件
         holder.cbSelect.setOnClickListener(v -> {
             toggleSelection(position);
         });
+
+        // 针对推荐页样式，设置特殊处理（点击图片区域也能触发详情）
+        if (isRecommend && holder.overlayClickArea != null) {
+            holder.overlayClickArea.setOnClickListener(v -> {
+                if (listener != null) {
+                    if ((pageType == PAGE_TYPE_NORMAL && isSelectionMode) ||
+                            ((pageType == PAGE_TYPE_FAVORITE || pageType == PAGE_TYPE_HISTORY) && isEditMode)) {
+                        return;
+                    }
+                    listener.onDetailClick(recipe.getRecipeId());
+                }
+            });
+        }
     }
 
     private void toggleSelection(int position) {
         RecipeResponse recipe = recipeList.get(position);
 
         if (pageType == PAGE_TYPE_HISTORY || pageType == PAGE_TYPE_FAVORITE) {
-            // 对于历史页和收藏页，使用对应的ID
             int targetId = (pageType == PAGE_TYPE_HISTORY) ? recipe.getHistoryId() : recipe.getRecipeId();
 
             if (selectedIds.contains(targetId)) {
@@ -363,7 +389,6 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
                 selectedItems.add(position);
             }
         } else {
-            // 对于普通页，使用position
             if (selectedItems.contains(position)) {
                 selectedItems.remove(Integer.valueOf(position));
             } else {

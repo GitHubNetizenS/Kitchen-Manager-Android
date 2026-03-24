@@ -152,14 +152,15 @@ public class CategoryFragment extends Fragment {
     /**
      * 设置布局监听器，动态调整RecyclerView的paddingTop
      */
-    /**
-     * 设置布局监听器，动态调整RecyclerView的paddingTop
-     */
     private void setupLayoutListeners() {
         // 监听全局布局变化
         rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
+                // 添加 Fragment 状态检查
+                if (!isAdded() || getContext() == null) {
+                    return;
+                }
                 calculateHeaderHeight();
                 adjustRecyclerViewPadding();
             }
@@ -170,6 +171,10 @@ public class CategoryFragment extends Fragment {
             filterRowLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
+                    // 添加 Fragment 状态检查
+                    if (!isAdded() || getContext() == null) {
+                        return;
+                    }
                     int newHeight = filterRowLayout.getHeight();
                     if (filterRowHeight != newHeight) {
                         filterRowHeight = newHeight;
@@ -183,6 +188,10 @@ public class CategoryFragment extends Fragment {
         hsvSelectedTags.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
+                // 添加 Fragment 状态检查
+                if (!isAdded() || getContext() == null) {
+                    return;
+                }
                 if (hsvSelectedTags.getVisibility() == View.VISIBLE) {
                     adjustRecyclerViewPadding();
                 }
@@ -206,25 +215,19 @@ public class CategoryFragment extends Fragment {
     /**
      * 调整RecyclerView的paddingTop，避免被头部遮挡
      */
-    /**
-     * 调整RecyclerView的paddingTop，避免被头部遮挡
-     */
     private void adjustRecyclerViewPadding() {
-        if (rvRecipes == null) return;
+        // 添加 Fragment 状态检查
+        if (rvRecipes == null || !isAdded() || getContext() == null) return;
 
         calculateHeaderHeight();
 
         // 设置RecyclerView的paddingTop - 让菜谱更贴近筛选栏
-
-        int paddingTop = dpToPx(6);  // 固定8dp，而不是使用filterRowHeight
+        int paddingTop = dpToPx(6);  // 固定6dp，而不是使用filterRowHeight
 
         // 如果标签栏可见且不为空，需要额外增加标签栏的高度
         if (hsvSelectedTags.getVisibility() == View.VISIBLE && llSelectedTags.getChildCount() > 0) {
             paddingTop += hsvSelectedTags.getHeight();
         }
-
-        // 不再额外添加4dp，或者可以保留但改为更小的值
-        // paddingTop += dpToPx(4);  // 注释掉这行，或者改为1dp
 
         rvRecipes.setPadding(
                 dpToPx(8),  // left
@@ -347,7 +350,7 @@ public class CategoryFragment extends Fragment {
 
     // 更新已选标签
     private void updateSelectedTags() {
-        if (llSelectedTags == null) return;
+        if (llSelectedTags == null || !isAdded() || getContext() == null) return;
 
         llSelectedTags.removeAllViews();
 
@@ -378,20 +381,26 @@ public class CategoryFragment extends Fragment {
             hsvSelectedTags.setVisibility(newVisibility);
             // 等待布局完成后调整RecyclerView的padding
             hsvSelectedTags.post(() -> {
-                calculateHeaderHeight();
-                adjustRecyclerViewPadding();
+                if (isAdded() && getContext() != null) {
+                    calculateHeaderHeight();
+                    adjustRecyclerViewPadding();
+                }
             });
         } else {
             // 可见性不变但标签内容可能变化，直接调整padding
             hsvSelectedTags.post(() -> {
-                calculateHeaderHeight();
-                adjustRecyclerViewPadding();
+                if (isAdded() && getContext() != null) {
+                    calculateHeaderHeight();
+                    adjustRecyclerViewPadding();
+                }
             });
         }
     }
 
     // 添加标签视图
     private void addTagView(String text, String type) {
+        if (!isAdded() || getContext() == null) return;
+
         TextView tag = new TextView(getContext());
         tag.setText(text);
         tag.setTextSize(12);
@@ -408,6 +417,8 @@ public class CategoryFragment extends Fragment {
 
         // 点击移除
         tag.setOnClickListener(v -> {
+            if (!isAdded() || getContext() == null) return;
+
             switch (type) {
                 case "taste":
                     selectedTastes.remove(text);
@@ -667,7 +678,7 @@ public class CategoryFragment extends Fragment {
     }
 
     private void updateButtonStates() {
-        if (rootView == null) return;
+        if (rootView == null || !isAdded() || getContext() == null) return;
 
         // 更新显示文本
         if (!selectedTastes.isEmpty()) {
@@ -936,6 +947,11 @@ public class CategoryFragment extends Fragment {
 
     // 添加一个工具方法，将dp转换为px
     private int dpToPx(int dp) {
+        // 添加 Fragment 状态检查
+        if (!isAdded() || getResources() == null) {
+            // 返回一个默认值，或者使用屏幕密度计算
+            return (int) (dp * 1.5f); // 默认使用1.5倍率作为fallback
+        }
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
@@ -1093,4 +1109,26 @@ public class CategoryFragment extends Fragment {
             rvRecipes.setVisibility(View.VISIBLE);
         }
     }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
+        // 移除布局监听器避免内存泄漏
+        if (rootView != null && rootView.getViewTreeObserver().isAlive()) {
+            rootView.getViewTreeObserver().removeOnGlobalLayoutListener(null);
+        }
+
+        if (filterRowLayout != null && filterRowLayout.getViewTreeObserver().isAlive()) {
+            filterRowLayout.getViewTreeObserver().removeOnGlobalLayoutListener(null);
+        }
+
+        if (hsvSelectedTags != null && hsvSelectedTags.getViewTreeObserver().isAlive()) {
+            hsvSelectedTags.getViewTreeObserver().removeOnGlobalLayoutListener(null);
+        }
+
+        // 清理引用
+        rootView = null;
+    }
+
 }
