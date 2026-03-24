@@ -24,7 +24,7 @@
             android:scaleType="centerCrop"
             android:src="@drawable/placeholder" />
 
-        <!-- 菜谱名称（加粗） -->
+        <!-- 菜谱名称（加粗）-->
 
         <!-- 第一行：口味、方法、时间、难度 -->
         <TextView
