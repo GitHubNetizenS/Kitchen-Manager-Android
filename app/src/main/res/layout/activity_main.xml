@@ -18,51 +18,66 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@drawable/bg_splash_gradient"
-            >
+            android:elevation="4dp">
 
             <RelativeLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent">
 
-                <TextView
-                    android:id="@+id/tv_title"
-                    android:layout_width="84dp"
-                    android:layout_height="36dp"
-                    android:layout_alignParentTop="true"
-                    android:layout_alignParentBottom="true"
-                    android:layout_marginStart="121dp"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginEnd="121dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_toStartOf="@+id/iv_search"
-                    android:layout_toEndOf="@+id/tobuy"
-                    android:text="厨房管家"
-                    android:textColor="#FFFFFF"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:gravity="center"/>
+                <!-- 左侧购物车图标 -->
+
+                <!-- 搜索框容器：仅包含标题（居中）和搜索图标（右对齐） -->
 
                 <ImageView
                     android:id="@+id/tobuy"
                     android:layout_width="33dp"
                     android:layout_height="29dp"
-                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
                     android:layout_alignParentBottom="true"
-                    android:layout_marginLeft="-6dp"
-                    android:layout_marginBottom="15dp"
-                    android:contentDescription="待购买"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginBottom="14dp"
                     android:clickable="true"
-                    app:srcCompat="@drawable/tobuy" />
+                    android:contentDescription="待购买"
+                    android:src="@drawable/tobuy" />
 
-                <ImageView
-                    android:id="@+id/iv_search"
-                    android:layout_width="50dp"
-                    android:layout_height="wrap_content"
+                <LinearLayout
+                    android:id="@+id/search_container"
+                    android:layout_width="330dp"
+                    android:layout_height="42dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:padding="8dp"
-                    android:src="@drawable/search"
-                    android:contentDescription="搜索" />
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="22dp"
+                    android:layout_toEndOf="@+id/tobuy"
+                    android:background="@drawable/bg_search_rounded_white"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp">
+
+                    <!-- 标题 TextView，居中显示 -->
+                    <TextView
+                        android:id="@+id/tv_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:gravity="center"
+                        android:text="厨房管家"
+                        android:textColor="#333333"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <!-- 搜索图标 -->
+                    <ImageView
+                        android:id="@+id/iv_search"
+                        android:layout_width="38dp"
+                        android:layout_height="match_parent"
+                        android:contentDescription="搜索"
+                        android:padding="8dp"
+                        android:src="@drawable/search" />
+                </LinearLayout>
+
             </RelativeLayout>
         </androidx.appcompat.widget.Toolbar>
 

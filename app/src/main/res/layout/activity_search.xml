@@ -22,40 +22,58 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+                <!-- 返回图标 -->
                 <ImageView
                     android:id="@+id/iv_back"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="返回"
                     android:padding="4dp"
-                    android:src="@drawable/back"
-                    android:contentDescription="返回" />
+                    android:src="@drawable/back" />
 
-                <EditText
-                    android:id="@+id/et_search"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_toStartOf="@+id/iv_search_action"
-                    android:layout_toEndOf="@id/iv_back"
-                    android:layout_centerVertical="true"
-                    android:hint="输入食谱或食材名称"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:padding="8dp"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#CCFFFFFF" />
-
-                <ImageView
-                    android:id="@+id/iv_search_action"
-                    android:layout_width="50dp"
-                    android:layout_height="wrap_content"
+                <!-- 搜索框容器：包含输入框和搜索图标，占据剩余宽度 -->
+                <LinearLayout
+                    android:id="@+id/search_container"
+                    android:layout_width="343dp"
+                    android:layout_height="44dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:padding="8dp"
-                    android:src="@drawable/search"
-                    android:contentDescription="搜索" />
+                    android:layout_marginStart="-8dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_toEndOf="@+id/iv_back"
+                    android:background="@drawable/bg_search_rounded_white"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp">
+
+                    <EditText
+                        android:id="@+id/et_search"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="输入食谱或食材名称"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingVertical="8dp"
+                        android:textColor="#000000"
+                        android:textColorHint="#999999" />
+
+                    <!-- 搜索图标，位于输入框右侧 -->
+                    <ImageView
+                        android:id="@+id/iv_search_action"
+                        android:layout_width="47dp"
+                        android:layout_height="match_parent"
+                        android:contentDescription="搜索"
+                        android:padding="8dp"
+                        android:src="@drawable/search" />
+                </LinearLayout>
+
             </RelativeLayout>
         </androidx.appcompat.widget.Toolbar>
 
@@ -131,14 +149,5 @@
             android:visibility="gone" />
 
         <!-- 空状态视图 -->
-        <TextView
-            android:id="@+id/emptyView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="请输入搜索内容"
-            android:textSize="18sp"
-            android:visibility="visible" />
     </FrameLayout>
 </androidx.core.widget.NestedScrollView>

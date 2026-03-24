@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView tobuy;
     private FrameLayout navFragmentContainer;  // 新增：侧边栏中的Fragment容器
     private boolean isToBuyFragmentShowing = false;
+    private LinearLayout searchContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +79,8 @@ public class MainActivity extends AppCompatActivity {
         tvTitle = findViewById(R.id.tv_title);
         navigationView = findViewById(R.id.navigation_view);
         tobuy = findViewById(R.id.tobuy);
+        searchContainer = findViewById(R.id.search_container);
+        searchContainer.setClickable(true);  // 确保容器可点击
 
         // 在侧边栏中动态添加一个Fragment容器
         View headerView = navigationView.getHeaderView(0);
@@ -102,6 +105,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // 搜索容器点击：启动搜索页
+        searchContainer.setOnClickListener(v -> {
+            Intent searchIntent = new Intent(MainActivity.this, SearchActivity.class);
+            searchIntent.putExtra("search_mode", "normal");
+            startActivity(searchIntent);
+        });
+
+        // 搜索图标点击：通过容器触发相同逻辑
+        ivSearch.setOnClickListener(v -> {
+            searchContainer.performClick();
+        });
         //打开侧边栏
         tobuy.setOnClickListener(v -> {
             if (drawerLayout.isDrawerOpen(navigationView)) {
