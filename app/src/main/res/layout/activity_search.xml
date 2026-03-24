@@ -120,7 +120,7 @@
             android:padding="8dp"
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             app:spanCount="1"
-            tools:listitem="@layout/item_recipe" />
+            tools:listitem="@layout/item_recipe_recommend" />
 
         <!-- 加载进度条 -->
         <ProgressBar
