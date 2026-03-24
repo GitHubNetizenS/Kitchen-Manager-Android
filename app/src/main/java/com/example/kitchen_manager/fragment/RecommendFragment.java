@@ -120,7 +120,7 @@ public class RecommendFragment extends Fragment {
         btnOther.setOnClickListener(categoryClickListener);
         btnSnack.setOnClickListener(categoryClickListener);
 
-        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 1);
+        GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 2);
         rvRecipes.setLayoutManager(layoutManager);
 
         rvRecipes.setHasFixedSize(true);

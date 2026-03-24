@@ -30,7 +30,9 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
 
     public interface OnItemClickListener {
         void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite);
+
         void onDetailClick(int recipeId);
+
         void onCartClick(int recipeId, boolean isCurrentlyInCart);
     }
 
@@ -164,6 +166,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
 
     /**
      * 格式化原料字符串，移除JSON数组的括号和引号
+     *
      * @param needs 原始原料字符串
      * @return 格式化后的原料字符串
      */
@@ -399,5 +402,4 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.ViewHolder
             overlayClickArea = itemView.findViewById(R.id.overlay_click_area);
         }
     }
-
 }
