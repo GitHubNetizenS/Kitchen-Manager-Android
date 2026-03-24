@@ -10,53 +10,64 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.activity.FavoriteActivity;
 import com.example.kitchen_manager.activity.HistoryActivity;
 import com.example.kitchen_manager.activity.LoginActivity;
 import com.example.kitchen_manager.activity.MainActivity;
+import com.example.kitchen_manager.activity.PreferenceActivity;
 import com.example.kitchen_manager.activity.ProfileEditActivity;
-import com.example.kitchen_manager.R;
+import com.example.kitchen_manager.activity.RecipeDetailActivity;
+import com.example.kitchen_manager.adapters.RecipeAdapter;
 import com.example.kitchen_manager.api.ApiService;
-import com.example.kitchen_manager.models.Tag;
-import com.example.kitchen_manager.models.User;
 import com.example.kitchen_manager.response.ApiResponse;
-import com.example.kitchen_manager.response.TagResponse;
-import com.google.gson.Gson;
+import com.example.kitchen_manager.response.RecipeResponse;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MineFragment extends Fragment {
-    private TextView tvName, tvTitle, tvFavAmount, tvHistoryAmount;
+
+    private TextView tvName, tvTitle, tvFavAmount, tvHistoryAmount, tvPreferenceSummary;
     private ImageView ivAvatar;
     private SharedPreferences prefs;
     private ApiService apiService;
-    private CardView cardFavorites, cardHistory, cardTaste, cardPeople, cardSpecial;
-
-    // 用户ID从SharedPreferences获取
     private int userId = -1;
 
-    // 存储用户选择的标签
-    private Map<String, Set<Integer>> selectedTags = new HashMap<>();
-    private Map<String, List<Tag>> categoryTags = new HashMap<>();
+    // Tab相关
+    private TextView tabFavorite, tabHistory;
+    private View tabIndicator;
+    private LinearLayout favoriteContainer, historyContainer;
+    private RecyclerView rvFavorites, rvHistory;
+    private ProgressBar favProgress, historyProgress;
+    private TextView favEmpty, historyEmpty;
+    private View sortScroll;
+    private TextView btnSortTime, btnSortMatch;
+
+    // Adapter
+    private RecipeAdapter favoriteAdapter, historyAdapter;
+    private List<RecipeResponse> favoriteList = new ArrayList<>();
+    private List<RecipeResponse> historyList = new ArrayList<>();
+
+    private boolean isFavoriteTab = true;
+    private boolean isTimeSort = true;
 
     private static final int PROFILE_EDIT_REQUEST = 100;
 
@@ -69,399 +80,546 @@ public class MineFragment extends Fragment {
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        initViews(view);
+        initData();
+        setupListeners(view);
+        setupAdapters();
+        loadUserData();
+    }
+
+    private void initViews(View view) {
         tvName = view.findViewById(R.id.tv_mine_name);
         tvTitle = view.findViewById(R.id.tv_mine_title);
         ivAvatar = view.findViewById(R.id.iv_mine_avatar);
         tvFavAmount = view.findViewById(R.id.fav_amount);
         tvHistoryAmount = view.findViewById(R.id.history_amount);
-        cardFavorites = view.findViewById(R.id.card_favorites);
-        cardHistory = view.findViewById(R.id.card_history);
-        cardTaste = view.findViewById(R.id.taste);
-        cardPeople = view.findViewById(R.id.people);
-        cardSpecial = view.findViewById(R.id.special);
+        tvPreferenceSummary = view.findViewById(R.id.tv_preference_summary);
 
+        // Tab相关
+        tabFavorite = view.findViewById(R.id.tab_favorite);
+        tabHistory = view.findViewById(R.id.tab_history);
+        tabIndicator = view.findViewById(R.id.tab_indicator);
+        favoriteContainer = view.findViewById(R.id.favorite_container);
+        historyContainer = view.findViewById(R.id.history_container);
+        rvFavorites = view.findViewById(R.id.rv_favorites);
+        rvHistory = view.findViewById(R.id.rv_history);
+        favProgress = view.findViewById(R.id.fav_progress);
+        historyProgress = view.findViewById(R.id.history_progress);
+        favEmpty = view.findViewById(R.id.fav_empty);
+        historyEmpty = view.findViewById(R.id.history_empty);
+        sortScroll = view.findViewById(R.id.sort_scroll);
+        btnSortTime = view.findViewById(R.id.btn_sort_time);
+        btnSortMatch = view.findViewById(R.id.btn_sort_match);
+    }
+
+    private void initData() {
         prefs = requireContext().getSharedPreferences("user_session", Context.MODE_PRIVATE);
+        userId = prefs.getInt("user_id", -1);
 
-        // 初始化API服务
         if (getActivity() != null && getActivity() instanceof MainActivity) {
             apiService = ((MainActivity) requireActivity()).getApiService();
         }
-
-        // 获取用户ID
-        userId = prefs.getInt("user_id", -1);
-        Log.d("MineFragment", "当前用户ID: " + userId);
-
-        // 初始化标签分类
-        selectedTags.put("菜品口味", new HashSet<>());
-        selectedTags.put("适用人群", new HashSet<>());
-        selectedTags.put("特殊需求", new HashSet<>());
-
-        // 先显示加载状态
-        tvName.setText("加载中...");
-        tvTitle.setText("");
-        ivAvatar.setImageResource(R.drawable.ic_logo_orange);
-        tvFavAmount.setText("0");
-        tvHistoryAmount.setText("0");
-
-        // 先显示本地缓存数据
-        updateUserInfoDisplay();
-
-        // 获取最新用户信息
-        fetchUserProfile();
-
-        // 获取收藏数量（每次从服务器重新获取，不缓存）
-        fetchFavoriteCount();
-
-        // 获取烹饪记录数量（每次从服务器重新获取，不缓存）
-        fetchHistoryCount();
-
-        // 加载标签数据
-        loadTags();
-
-        // 用户信息卡片点击事件
-        CardView cardUserInfo = view.findViewById(R.id.card_user_info);
-        cardUserInfo.setOnClickListener(v -> {
-            if (userId != -1) {
-                Intent intent = new Intent(getContext(), ProfileEditActivity.class);
-                startActivityForResult(intent, PROFILE_EDIT_REQUEST);
-            } else {
-                // 如果未登录，跳转到登录页面
-                Intent intent = new Intent(getContext(), LoginActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        // 收藏菜谱卡片点击事件
-        cardFavorites.setOnClickListener(v -> {
-            if (userId != -1) {
-                // 跳转到收藏页面
-                Intent intent = new Intent(getContext(), FavoriteActivity.class);
-                startActivity(intent);
-            } else {
-                Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(getContext(), LoginActivity.class));
-            }
-        });
-
-        // 烹饪记录卡片点击事件
-        cardHistory.setOnClickListener(v -> {
-            if (userId != -1) {
-                // 跳转到历史记录页面
-                Intent intent = new Intent(getContext(), HistoryActivity.class);
-                startActivity(intent);
-            } else {
-                Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(getContext(), LoginActivity.class));
-            }
-        });
-
-        // 菜品口味卡片点击事件
-        cardTaste.setOnClickListener(v -> showTagSelectionDialog("菜品口味"));
-
-        // 适用人群卡片点击事件
-        cardPeople.setOnClickListener(v -> showTagSelectionDialog("适用人群"));
-
-        // 特殊需求卡片点击事件
-        cardSpecial.setOnClickListener(v -> showTagSelectionDialog("特殊需求"));
     }
 
-    // 显示标签选择对话框
-    private void showTagSelectionDialog(String category) {
-        if (userId == -1) {
-            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
-            return;
+    private void setupListeners(View view) {
+        // 编辑资料按钮
+        ImageView ivEdit = view.findViewById(R.id.iv_mine_avatar).getRootView().findViewById(R.id.iv_mine_avatar);
+        View editButton = view.findViewById(R.id.iv_mine_avatar).getRootView().findViewById(R.id.iv_mine_avatar);
+        if (editButton != null) {
+            editButton.setOnClickListener(v -> {
+                if (userId != -1) {
+                    startActivityForResult(new Intent(getContext(), ProfileEditActivity.class), PROFILE_EDIT_REQUEST);
+                } else {
+                    startActivity(new Intent(getContext(), LoginActivity.class));
+                }
+            });
         }
 
-        List<Tag> tags = categoryTags.get(category);
-        if (tags == null || tags.isEmpty()) {
-            Toast.makeText(getContext(), "标签数据未加载", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 创建标签名称数组
-        CharSequence[] tagNames = new CharSequence[tags.size()];
-        for (int i = 0; i < tags.size(); i++) {
-            tagNames[i] = tags.get(i).getName();
-        }
-
-        // 获取当前选中的标签
-        Set<Integer> selectedIds = selectedTags.get(category);
-        boolean[] checkedItems = new boolean[tags.size()];
-        for (int i = 0; i < tags.size(); i++) {
-            checkedItems[i] = selectedIds.contains(tags.get(i).getId());
-        }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("选择" + category);
-        builder.setMultiChoiceItems(tagNames, checkedItems, (dialog, which, isChecked) -> {
-            // 不需要在这里处理，在确定按钮中处理
+        // 偏好设置
+        CardView cardPreference = view.findViewById(R.id.card_preference);
+        cardPreference.setOnClickListener(v -> {
+            if (userId != -1) {
+                startActivity(new Intent(getContext(), PreferenceActivity.class));
+            } else {
+                Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getContext(), LoginActivity.class));
+            }
         });
 
-        builder.setPositiveButton("确定", (dialog, which) -> {
-            // 获取选中的标签
-            Set<Integer> newSelectedIds = new HashSet<>();
-            AlertDialog alertDialog = (AlertDialog) dialog;
-            for (int i = 0; i < tags.size(); i++) {
-                if (alertDialog.getListView().isItemChecked(i)) {
-                    newSelectedIds.add(tags.get(i).getId());
+        // Tab切换
+        tabFavorite.setOnClickListener(v -> switchTab(true));
+        tabHistory.setOnClickListener(v -> switchTab(false));
+
+        // 排序按钮
+        btnSortTime.setOnClickListener(v -> {
+            updateSortButtonState(true);
+            isTimeSort = true;
+            if (isFavoriteTab) {
+                loadFavoriteRecipes(true);
+            } else {
+                loadHistoryRecipes(true);
+            }
+        });
+
+        btnSortMatch.setOnClickListener(v -> {
+            updateSortButtonState(false);
+            isTimeSort = false;
+            if (isFavoriteTab) {
+                loadFavoriteRecipes(false);
+            } else {
+                loadHistoryRecipes(false);
+            }
+        });
+    }
+
+    private void setupAdapters() {
+        // 收藏Adapter
+        favoriteAdapter = new RecipeAdapter(requireContext(), favoriteList,
+                new RecipeAdapter.OnItemClickListener() {
+                    @Override
+                    public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
+                        unfavoriteRecipe(recipeId);
+                    }
+
+                    @Override
+                    public void onDetailClick(int recipeId) {
+                        showRecipeDetail(recipeId);
+                    }
+
+                    @Override
+                    public void onCartClick(int recipeId, boolean isCurrentlyInCart) {
+                        handleCartClick(recipeId, isCurrentlyInCart);
+                    }
+                }, RecipeAdapter.PAGE_TYPE_FAVORITE);
+        rvFavorites.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        rvFavorites.setAdapter(favoriteAdapter);
+
+        // 历史Adapter
+        historyAdapter = new RecipeAdapter(requireContext(), historyList,
+                new RecipeAdapter.OnItemClickListener() {
+                    @Override
+                    public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
+                        if (isCurrentlyFavorite) {
+                            unfavoriteRecipe(recipeId);
+                        } else {
+                            favoriteRecipe(recipeId);
+                        }
+                    }
+
+                    @Override
+                    public void onDetailClick(int recipeId) {
+                        showRecipeDetail(recipeId);
+                    }
+
+                    @Override
+                    public void onCartClick(int recipeId, boolean isCurrentlyInCart) {
+                        handleCartClick(recipeId, isCurrentlyInCart);
+                    }
+                }, RecipeAdapter.PAGE_TYPE_HISTORY);
+        rvHistory.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        rvHistory.setAdapter(historyAdapter);
+    }
+
+    private void switchTab(boolean showFavorite) {
+        isFavoriteTab = showFavorite;
+
+        if (showFavorite) {
+            tabFavorite.setTextColor(getResources().getColor(R.color.orange));
+            tabHistory.setTextColor(getResources().getColor(R.color.gray_text));
+            favoriteContainer.setVisibility(View.VISIBLE);
+            historyContainer.setVisibility(View.GONE);
+            // 更新排序按钮文字
+            btnSortTime.setText("收藏时间");
+            if (favoriteList.isEmpty()) {
+                loadFavoriteRecipes(isTimeSort);
+            }
+        } else {
+            tabFavorite.setTextColor(getResources().getColor(R.color.gray_text));
+            tabHistory.setTextColor(getResources().getColor(R.color.orange));
+            favoriteContainer.setVisibility(View.GONE);
+            historyContainer.setVisibility(View.VISIBLE);
+            btnSortTime.setText("烹饪时间");
+            if (historyList.isEmpty()) {
+                loadHistoryRecipes(isTimeSort);
+            }
+        }
+
+        // 移动指示器
+        tabIndicator.animate()
+                .translationX(showFavorite ? 0 : tabFavorite.getWidth())
+                .setDuration(200)
+                .start();
+
+        sortScroll.setVisibility(View.VISIBLE);
+    }
+
+    private void updateSortButtonState(boolean isTime) {
+        if (isTime) {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortTime.setTextColor(getResources().getColor(android.R.color.white));
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortMatch.setTextColor(getResources().getColor(R.color.gray));
+        } else {
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal);
+            btnSortTime.setTextColor(getResources().getColor(R.color.gray));
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_selected);
+            btnSortMatch.setTextColor(getResources().getColor(android.R.color.white));
+        }
+    }
+
+    private void loadUserData() {
+        if (userId != -1) {
+            fetchUserProfile();
+            fetchFavoriteCount();
+            fetchHistoryCount();
+            loadFavoriteRecipes(true);
+        } else {
+            tvName.setText("请登录");
+            tvTitle.setText("");
+            tvFavAmount.setText("0");
+            tvHistoryAmount.setText("0");
+            tvPreferenceSummary.setText("登录后设置偏好");
+        }
+    }
+
+    private void fetchUserProfile() {
+        if (userId == -1) return;
+
+        Call<ApiResponse<com.example.kitchen_manager.models.User>> call = apiService.getUserProfile(userId);
+        call.enqueue(new Callback<ApiResponse<com.example.kitchen_manager.models.User>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<com.example.kitchen_manager.models.User>> call,
+                                   Response<ApiResponse<com.example.kitchen_manager.models.User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    com.example.kitchen_manager.models.User user = response.body().getData();
+                    if (user != null) {
+                        updateUI(user);
+                    }
                 }
             }
 
-            // 更新选择
-            selectedTags.put(category, newSelectedIds);
-
-            // 保存到服务器
-            saveUserTags(category, newSelectedIds);
+            @Override
+            public void onFailure(Call<ApiResponse<com.example.kitchen_manager.models.User>> call, Throwable t) {
+                updateUserInfoDisplay();
+            }
         });
-
-        builder.setNegativeButton("取消", null);
-        builder.show();
     }
 
-    // 保存用户选择的标签
-    private void saveUserTags(String category, Set<Integer> tagIds) {
-        List<Integer> tagIdList = new ArrayList<>(tagIds);
-        Gson gson = new Gson();
-        String tagIdsJson = gson.toJson(tagIdList);
+    private void updateUI(com.example.kitchen_manager.models.User user) {
+        if (user != null) {
+            tvName.setText(user.getUsername());
+            tvTitle.setText(user.getTitle());
 
-        Call<ApiResponse<Void>> call = apiService.saveUserTags(
-                userId,
-                category,
-                tagIdsJson
-        );
+            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                Picasso.get()
+                        .load(user.getAvatarUrl() + "?t=" + System.currentTimeMillis())
+                        .placeholder(R.drawable.ic_logo_orange)
+                        .error(R.drawable.ic_logo_orange)
+                        .into(ivAvatar);
+            }
+        }
+    }
 
+    private void updateUserInfoDisplay() {
+        if (userId != -1) {
+            String name = prefs.getString("username", "");
+            String title = prefs.getString("title", "");
+            tvName.setText(name);
+            tvTitle.setText(title);
+        }
+    }
+
+    private void fetchFavoriteCount() {
+        if (userId == -1) return;
+        Call<ApiResponse<Integer>> call = apiService.getFavoriteCount(userId);
+        call.enqueue(new Callback<ApiResponse<Integer>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Integer>> call, Response<ApiResponse<Integer>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    tvFavAmount.setText(String.valueOf(response.body().getData()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
+                tvFavAmount.setText("0");
+            }
+        });
+    }
+
+    private void fetchHistoryCount() {
+        if (userId == -1) return;
+        Call<ApiResponse<Integer>> call = apiService.getHistoryCount(userId);
+        call.enqueue(new Callback<ApiResponse<Integer>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Integer>> call, Response<ApiResponse<Integer>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    tvHistoryAmount.setText(String.valueOf(response.body().getData()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
+                tvHistoryAmount.setText("0");
+            }
+        });
+    }
+
+    private void loadFavoriteRecipes(boolean isTimeSort) {
+        if (userId == -1) return;
+
+        favProgress.setVisibility(View.VISIBLE);
+        favEmpty.setVisibility(View.GONE);
+
+        String sortType = isTimeSort ? "time" : "match";
+        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getFavoriteRecipes(userId, sortType);
+        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call,
+                                   Response<ApiResponse<List<RecipeResponse>>> response) {
+                favProgress.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    List<RecipeResponse> recipes = response.body().getData();
+                    if (recipes != null && !recipes.isEmpty()) {
+                        for (RecipeResponse recipe : recipes) {
+                            recipe.setFavorite(true);
+                        }
+                        favoriteList.clear();
+                        favoriteList.addAll(recipes);
+                        favoriteAdapter.notifyDataSetChanged();
+                        rvFavorites.setVisibility(View.VISIBLE);
+                        favEmpty.setVisibility(View.GONE);
+                        checkCartStatusForRecipes(recipes, true);
+                    } else {
+                        favoriteList.clear();
+                        favoriteAdapter.notifyDataSetChanged();
+                        rvFavorites.setVisibility(View.GONE);
+                        favEmpty.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    favEmpty.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
+                favProgress.setVisibility(View.GONE);
+                favEmpty.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void loadHistoryRecipes(boolean isTimeSort) {
+        if (userId == -1) return;
+
+        historyProgress.setVisibility(View.VISIBLE);
+        historyEmpty.setVisibility(View.GONE);
+
+        String sortType = isTimeSort ? "time" : "match";
+        Call<ApiResponse<List<RecipeResponse>>> call = apiService.getHistoryRecipes(userId, sortType);
+        call.enqueue(new Callback<ApiResponse<List<RecipeResponse>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<RecipeResponse>>> call,
+                                   Response<ApiResponse<List<RecipeResponse>>> response) {
+                historyProgress.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    List<RecipeResponse> recipes = response.body().getData();
+                    if (recipes != null && !recipes.isEmpty()) {
+                        historyList.clear();
+                        historyList.addAll(recipes);
+                        historyAdapter.notifyDataSetChanged();
+                        rvHistory.setVisibility(View.VISIBLE);
+                        historyEmpty.setVisibility(View.GONE);
+                        checkCartStatusForRecipes(recipes, false);
+                    } else {
+                        historyList.clear();
+                        historyAdapter.notifyDataSetChanged();
+                        rvHistory.setVisibility(View.GONE);
+                        historyEmpty.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    historyEmpty.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<List<RecipeResponse>>> call, Throwable t) {
+                historyProgress.setVisibility(View.GONE);
+                historyEmpty.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void checkCartStatusForRecipes(List<RecipeResponse> recipes, boolean isFavorite) {
+        if (userId == -1) return;
+        for (RecipeResponse recipe : recipes) {
+            checkSingleCartStatus(recipe, isFavorite);
+        }
+    }
+
+    private void checkSingleCartStatus(RecipeResponse recipe, boolean isFavorite) {
+        Call<ApiResponse<Boolean>> call = apiService.checkIfInCart(userId, recipe.getRecipeId());
+        call.enqueue(new Callback<ApiResponse<Boolean>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Boolean>> call, Response<ApiResponse<Boolean>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    recipe.setInShoppingCart(response.body().getData());
+                    if (isFavorite) {
+                        int index = favoriteList.indexOf(recipe);
+                        if (index >= 0) favoriteAdapter.notifyItemChanged(index);
+                    } else {
+                        int index = historyList.indexOf(recipe);
+                        if (index >= 0) historyAdapter.notifyItemChanged(index);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Boolean>> call, Throwable t) {
+                Log.e("MineFragment", "检查购物车状态失败");
+            }
+        });
+    }
+
+    private void unfavoriteRecipe(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.unfavoriteRecipe(userId, recipeId);
         call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
             public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Void> apiResponse = response.body();
-                    if (apiResponse.getCode() == 200) {
-                        Toast.makeText(getContext(), "保存成功", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getContext(), "保存失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(getContext(), "保存失败: 服务器错误", Toast.LENGTH_SHORT).show();
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    removeFromFavoriteList(recipeId);
+                    Toast.makeText(getContext(), "已取消收藏", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
-                Toast.makeText(getContext(), "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "操作失败", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // 加载标签数据
-    private void loadTags() {
-        Call<ApiResponse<List<TagResponse>>> call = apiService.getAllTags();
-        call.enqueue(new Callback<ApiResponse<List<TagResponse>>>() {
+    private void favoriteRecipe(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.favoriteRecipe(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
-            public void onResponse(Call<ApiResponse<List<TagResponse>>> call, Response<ApiResponse<List<TagResponse>>> response) {
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    updateHistoryFavoriteStatus(recipeId, true);
+                    Toast.makeText(getContext(), "已收藏", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Toast.makeText(getContext(), "收藏失败", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void removeFromFavoriteList(int recipeId) {
+        for (int i = 0; i < favoriteList.size(); i++) {
+            if (favoriteList.get(i).getRecipeId() == recipeId) {
+                favoriteList.remove(i);
+                favoriteAdapter.notifyItemRemoved(i);
+                fetchFavoriteCount();
+                break;
+            }
+        }
+        if (favoriteList.isEmpty()) {
+            favEmpty.setVisibility(View.VISIBLE);
+            rvFavorites.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateHistoryFavoriteStatus(int recipeId, boolean isFavorite) {
+        for (int i = 0; i < historyList.size(); i++) {
+            if (historyList.get(i).getRecipeId() == recipeId) {
+                historyList.get(i).setFavorite(isFavorite);
+                historyAdapter.notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
+    private void handleCartClick(int recipeId, boolean isCurrentlyInCart) {
+        if (userId == -1) {
+            Toast.makeText(getContext(), "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (isCurrentlyInCart) {
+            removeFromCart(recipeId);
+        } else {
+            addToCart(recipeId);
+        }
+    }
+
+    private void addToCart(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.addToCart(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<TagResponse>> apiResponse = response.body();
-                    if (apiResponse.getCode() == 200) {
-                        List<TagResponse> tagResponses = apiResponse.getData();
-                        processTags(tagResponses);
-
-                        // 加载用户已选择的标签
-                        loadUserSelectedTags();
+                    if (response.body().getCode() == 200 || response.body().getCode() == 409) {
+                        updateCartStatus(recipeId, true);
+                        Toast.makeText(getContext(), "已加入购物车", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<TagResponse>>> call, Throwable t) {
-                Log.e("MineFragment", "加载标签失败", t);
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Toast.makeText(getContext(), "操作失败", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // 处理标签数据
-    private void processTags(List<TagResponse> tagResponses) {
-        categoryTags.clear();
-        for (TagResponse tag : tagResponses) {
-            String category = tag.getCategory();
-            if (!categoryTags.containsKey(category)) {
-                categoryTags.put(category, new ArrayList<>());
-            }
-            categoryTags.get(category).add(new Tag(tag.getId(), tag.getName()));
-        }
-    }
-
-    // 加载用户已选择的标签
-    private void loadUserSelectedTags() {
-        if (userId == -1) return;
-
-        Call<ApiResponse<Map<String, List<Integer>>>> call = apiService.getUserTags(userId);
-        call.enqueue(new Callback<ApiResponse<Map<String, List<Integer>>>>() {
+    private void removeFromCart(int recipeId) {
+        Call<ApiResponse<Void>> call = apiService.removeFromCart(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
             @Override
-            public void onResponse(Call<ApiResponse<Map<String, List<Integer>>>> call, Response<ApiResponse<Map<String, List<Integer>>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Map<String, List<Integer>>> apiResponse = response.body();
-                    if (apiResponse.getCode() == 200) {
-                        Map<String, List<Integer>> userTags = apiResponse.getData();
-                        for (String category : userTags.keySet()) {
-                            Set<Integer> tagIds = new HashSet<>(userTags.get(category));
-                            selectedTags.put(category, tagIds);
-                        }
-                    }
+            public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCode() == 200) {
+                    updateCartStatus(recipeId, false);
+                    Toast.makeText(getContext(), "已从购物车移除", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<Map<String, List<Integer>>>> call, Throwable t) {
-                Log.e("MineFragment", "加载用户标签失败", t);
+            public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                Toast.makeText(getContext(), "操作失败", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // 更新用户信息显示
-    private void updateUserInfoDisplay() {
-        if (userId != -1) {
-            String name = prefs.getString("username", "");
-            String title = prefs.getString("title", "");
-            String avatarUrl = prefs.getString("avatar_url", "");
-            // 不再从缓存读取收藏和历史记录数量
-
-            tvName.setText(name);
-            tvTitle.setText(title);
-
-            if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                Picasso.get()
-                        .load(avatarUrl)
-                        .placeholder(R.drawable.ic_logo_orange)
-                        .error(R.drawable.ic_logo_orange)
-                        .into(ivAvatar);
-            } else {
-                ivAvatar.setImageResource(R.drawable.ic_logo_orange);
+    private void updateCartStatus(int recipeId, boolean inCart) {
+        for (int i = 0; i < favoriteList.size(); i++) {
+            if (favoriteList.get(i).getRecipeId() == recipeId) {
+                favoriteList.get(i).setInShoppingCart(inCart);
+                favoriteAdapter.notifyItemChanged(i);
+                break;
             }
-        } else {
-            tvName.setText("请登录");
-            tvTitle.setText("");
-            ivAvatar.setImageResource(R.drawable.ic_logo_orange);
-            tvFavAmount.setText("0");
-            tvHistoryAmount.setText("0");
+        }
+        for (int i = 0; i < historyList.size(); i++) {
+            if (historyList.get(i).getRecipeId() == recipeId) {
+                historyList.get(i).setInShoppingCart(inCart);
+                historyAdapter.notifyItemChanged(i);
+                break;
+            }
         }
     }
 
-    // 获取用户资料
-    private void fetchUserProfile() {
-        if (userId != -1) {
-            // 显示加载指示器
-            tvName.setText("加载中...");
-            tvTitle.setText("");
-
-            Call<ApiResponse<User>> call = apiService.getUserProfile(userId);
-            call.enqueue(new Callback<ApiResponse<User>>() {
-                @Override
-                public void onResponse(Call<ApiResponse<User>> call, Response<ApiResponse<User>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        ApiResponse<User> apiResponse = response.body();
-                        if (apiResponse.getCode() == 200) {
-                            User user = apiResponse.getData();
-                            // 保存到SharedPreferences
-                            SharedPreferences.Editor editor = prefs.edit();
-                            editor.putString("username", user.getUsername());
-                            editor.putString("phone", user.getPhone());
-                            editor.putString("avatar_url", user.getAvatarUrl());
-                            editor.putString("title", user.getTitle());
-
-                            editor.apply();
-
-                            // 更新显示
-                            updateUI(user);
-                        }
-                    } else {
-                        // 使用缓存数据
-                        updateUserInfoDisplay();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ApiResponse<User>> call, Throwable t) {
-                    // 使用缓存数据
-                    updateUserInfoDisplay();
-                }
-            });
-        } else {
-            updateUserInfoDisplay();
-        }
-    }
-
-    // 获取收藏数量 - 直接从服务器获取，不缓存
-    private void fetchFavoriteCount() {
-        if (userId != -1) {
-            tvFavAmount.setText("加载中...");
-            Call<ApiResponse<Integer>> call = apiService.getFavoriteCount(userId);
-            call.enqueue(new Callback<ApiResponse<Integer>>() {
-                @Override
-                public void onResponse(Call<ApiResponse<Integer>> call, Response<ApiResponse<Integer>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        ApiResponse<Integer> apiResponse = response.body();
-                        if (apiResponse.getCode() == 200) {
-                            int count = apiResponse.getData();
-                            tvFavAmount.setText(String.valueOf(count));
-                        } else {
-                            tvFavAmount.setText("0");
-                            Log.e("MineFragment", "获取收藏数量失败: " + apiResponse.getMessage());
-                        }
-                    } else {
-                        tvFavAmount.setText("0");
-                        Log.e("MineFragment", "获取收藏数量失败: 服务器响应错误");
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
-                    tvFavAmount.setText("0");
-                    Log.e("MineFragment", "获取收藏数量失败", t);
-                }
-            });
-        } else {
-            tvFavAmount.setText("0");
-        }
-    }
-
-    // 获取历史记录数量 - 直接从服务器获取，不缓存
-    private void fetchHistoryCount() {
-        if (userId != -1) {
-            tvHistoryAmount.setText("加载中...");
-            Call<ApiResponse<Integer>> call = apiService.getHistoryCount(userId);
-            call.enqueue(new Callback<ApiResponse<Integer>>() {
-                @Override
-                public void onResponse(Call<ApiResponse<Integer>> call, Response<ApiResponse<Integer>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        ApiResponse<Integer> apiResponse = response.body();
-                        if (apiResponse.getCode() == 200) {
-                            int count = apiResponse.getData();
-                            tvHistoryAmount.setText(String.valueOf(count));
-                        } else {
-                            tvHistoryAmount.setText("0");
-                            Log.e("MineFragment", "获取历史记录数量失败: " + apiResponse.getMessage());
-                        }
-                    } else {
-                        tvHistoryAmount.setText("0");
-                        Log.e("MineFragment", "获取历史记录数量失败: 服务器响应错误");
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ApiResponse<Integer>> call, Throwable t) {
-                    tvHistoryAmount.setText("0");
-                    Log.e("MineFragment", "获取历史记录数量失败", t);
-                }
-            });
-        } else {
-            tvHistoryAmount.setText("0");
-        }
+    private void showRecipeDetail(int recipeId) {
+        Intent intent = new Intent(getContext(), RecipeDetailActivity.class);
+        intent.putExtra("recipe_id", recipeId);
+        startActivity(intent);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PROFILE_EDIT_REQUEST && resultCode == Activity.RESULT_OK) {
-            // 刷新数据
             fetchUserProfile();
         }
     }
@@ -471,35 +629,14 @@ public class MineFragment extends Fragment {
         super.onResume();
         userId = prefs.getInt("user_id", -1);
         if (userId != -1) {
-            fetchUserProfile();  // 只fetch，不重复updateUserInfoDisplay()如果数据未变
+            fetchUserProfile();
             fetchFavoriteCount();
             fetchHistoryCount();
-        } else {
-            updateUserInfoDisplay();
-        }
-    }
-
-    private void updateUI(User user) {
-        if (user != null) {
-            tvName.setText(user.getUsername());
-            tvTitle.setText(user.getTitle());
-
-            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                // 添加时间戳避免缓存问题
-                String urlWithTimestamp = user.getAvatarUrl() + "?t=" + System.currentTimeMillis();
-
-                Picasso.get()
-                        .load(urlWithTimestamp)
-                        .placeholder(R.drawable.ic_logo_orange)
-                        .error(R.drawable.ic_logo_orange)
-                        .into(ivAvatar);
+            if (isFavoriteTab) {
+                loadFavoriteRecipes(isTimeSort);
             } else {
-                ivAvatar.setImageResource(R.drawable.ic_logo_orange);
+                loadHistoryRecipes(isTimeSort);
             }
-        } else {
-            tvName.setText("获取信息失败");
-            tvTitle.setText("");
-            ivAvatar.setImageResource(R.drawable.ic_logo_orange);
         }
     }
 }
