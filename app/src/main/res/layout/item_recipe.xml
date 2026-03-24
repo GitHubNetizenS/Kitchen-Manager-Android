@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <CheckBox
+                android:id="@+id/cb_select"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <!-- 左侧：菜谱图片 -->
+            <ImageView
+                android:id="@+id/iv_recipe_image"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/placeholder" />
+
+            <!-- 中间：菜谱信息 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <!-- 菜谱名称（加粗） -->
+                <TextView
+                    android:id="@+id/tv_recipe_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="菜谱名称"
+                    android:textColor="@android:color/black"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <!-- 第一行：口味、方法、时间、难度 -->
+                <TextView
+                    android:id="@+id/tv_recipe_attributes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:maxLines="1"
+                    android:text="特点"
+                    android:textColor="#FF8C00"
+                    android:textSize="14sp" />
+
+                <!-- 第二行：原料/烹饪时间 -->
+                <TextView
+                    android:id="@+id/tv_recipe_needs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="原料"
+                    android:textColor="#616161"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 右侧：两个图标 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <!-- 收藏图标 -->
+                <ImageView
+                    android:id="@+id/iv_favorite"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:contentDescription="收藏"
+                    android:src="@drawable/ic_favorite_border" />
+
+                <!-- 购买图标 -->
+                <ImageView
+                    android:id="@+id/iv_buy"
+                    android:layout_width="match_parent"
+                    android:layout_height="31dp"
+                    android:layout_marginTop="8dp"
+                    android:contentDescription="购物车"
+                    android:src="@drawable/buylist" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 透明点击区域，用于捕获整体点击事件 -->
+    <View
+        android:id="@+id/overlay_click_area"
+        android:layout_width="match_parent"
+        android:layout_height="114dp"
+        android:background="@android:color/transparent" />
+</FrameLayout>

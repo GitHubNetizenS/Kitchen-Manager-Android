@@ -1,6 +1,5 @@
 package com.example.kitchen_manager.fragment;
 
-import android.graphics.Rect;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -68,13 +68,15 @@ public class CategoryFragment extends Fragment {
 
     // 下拉框相关控件
     private TextView tvSort, tvMethod, tvTaste, tvDifficulty;
-    private TextView tvReset; // 改为重置按钮
-    private FrameLayout filterSort, filterMethod, filterTaste, filterDifficulty, filterReset; // 改为 filterReset
+    private TextView tvReset;
+    private FrameLayout filterSort, filterMethod, filterTaste, filterDifficulty, filterReset;
     private View mask;
     private FrameLayout dropdownContainer;
     private LinearLayout dropdownSort, dropdownMethod, dropdownTaste, dropdownDifficulty;
     private HorizontalScrollView hsvSelectedTags;
     private LinearLayout llSelectedTags;
+    private LinearLayout headerLayout;
+    private LinearLayout filterRowLayout;
 
     // 当前显示的下拉框
     private View activeDropdown = null;
@@ -82,6 +84,10 @@ public class CategoryFragment extends Fragment {
 
     // 口味临时选择
     private Map<String, Boolean> tempTasteSelection = new HashMap<>();
+
+    // 头部高度
+    private int headerHeight = 0;
+    private int filterRowHeight = 0;
 
     @Nullable
     @Override
@@ -99,6 +105,10 @@ public class CategoryFragment extends Fragment {
         setupListeners();
         setupRecyclerView();
         updateButtonStates();
+
+        // 监听布局变化，计算头部高度
+        setupLayoutListeners();
+
         loadRecipes();
 
         return rootView;
@@ -108,19 +118,21 @@ public class CategoryFragment extends Fragment {
         rvRecipes = rootView.findViewById(R.id.rv_recipes);
         progressBar = rootView.findViewById(R.id.progressBar);
         emptyView = rootView.findViewById(R.id.emptyView);
+        headerLayout = rootView.findViewById(R.id.header_layout);
+        filterRowLayout = rootView.findViewById(R.id.filter_row_layout);
 
         // 初始化筛选行控件
         tvSort = rootView.findViewById(R.id.tv_sort);
         tvMethod = rootView.findViewById(R.id.tv_method);
         tvTaste = rootView.findViewById(R.id.tv_taste);
         tvDifficulty = rootView.findViewById(R.id.tv_difficulty);
-        tvReset = rootView.findViewById(R.id.tv_reset); // 改为 tvReset
+        tvReset = rootView.findViewById(R.id.tv_reset);
 
         filterSort = rootView.findViewById(R.id.filter_sort);
         filterMethod = rootView.findViewById(R.id.filter_method);
         filterTaste = rootView.findViewById(R.id.filter_taste);
         filterDifficulty = rootView.findViewById(R.id.filter_difficulty);
-        filterReset = rootView.findViewById(R.id.filter_reset); // 改为 filterReset
+        filterReset = rootView.findViewById(R.id.filter_reset);
 
         // 初始化下拉框相关控件
         mask = rootView.findViewById(R.id.v_mask);
@@ -135,6 +147,93 @@ public class CategoryFragment extends Fragment {
         progressBar.setVisibility(View.GONE);
         emptyView.setVisibility(View.VISIBLE);
         rvRecipes.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * 设置布局监听器，动态调整RecyclerView的paddingTop
+     */
+    /**
+     * 设置布局监听器，动态调整RecyclerView的paddingTop
+     */
+    private void setupLayoutListeners() {
+        // 监听全局布局变化
+        rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                calculateHeaderHeight();
+                adjustRecyclerViewPadding();
+            }
+        });
+
+        // 监听筛选行高度变化
+        if (filterRowLayout != null) {
+            filterRowLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    int newHeight = filterRowLayout.getHeight();
+                    if (filterRowHeight != newHeight) {
+                        filterRowHeight = newHeight;
+                        adjustRecyclerViewPadding();
+                    }
+                }
+            });
+        }
+
+        // 监听标签栏高度变化
+        hsvSelectedTags.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (hsvSelectedTags.getVisibility() == View.VISIBLE) {
+                    adjustRecyclerViewPadding();
+                }
+            }
+        });
+    }
+
+    /**
+     * 计算头部总高度
+     */
+    private void calculateHeaderHeight() {
+        if (headerLayout != null) {
+            headerHeight = headerLayout.getHeight();
+            if (filterRowLayout != null) {
+                filterRowHeight = filterRowLayout.getHeight();
+            }
+            Log.d("CategoryFragment", "headerHeight: " + headerHeight + ", filterRowHeight: " + filterRowHeight);
+        }
+    }
+
+    /**
+     * 调整RecyclerView的paddingTop，避免被头部遮挡
+     */
+    /**
+     * 调整RecyclerView的paddingTop，避免被头部遮挡
+     */
+    private void adjustRecyclerViewPadding() {
+        if (rvRecipes == null) return;
+
+        calculateHeaderHeight();
+
+        // 设置RecyclerView的paddingTop - 让菜谱更贴近筛选栏
+
+        int paddingTop = dpToPx(6);  // 固定8dp，而不是使用filterRowHeight
+
+        // 如果标签栏可见且不为空，需要额外增加标签栏的高度
+        if (hsvSelectedTags.getVisibility() == View.VISIBLE && llSelectedTags.getChildCount() > 0) {
+            paddingTop += hsvSelectedTags.getHeight();
+        }
+
+        // 不再额外添加4dp，或者可以保留但改为更小的值
+        // paddingTop += dpToPx(4);  // 注释掉这行，或者改为1dp
+
+        rvRecipes.setPadding(
+                dpToPx(8),  // left
+                paddingTop,  // top
+                dpToPx(8),  // right
+                dpToPx(8)   // bottom
+        );
+
+        Log.d("CategoryFragment", "adjustRecyclerViewPadding: paddingTop = " + paddingTop);
     }
 
     private void setupListeners() {
@@ -183,6 +282,9 @@ public class CategoryFragment extends Fragment {
 
         // 重置并重新加载数据
         resetAndLoad();
+
+        // 调整RecyclerView的padding
+        adjustRecyclerViewPadding();
 
         Toast.makeText(getContext(), "已重置所有筛选条件", Toast.LENGTH_SHORT).show();
     }
@@ -235,7 +337,6 @@ public class CategoryFragment extends Fragment {
         activeTextView = null;
     }
 
-
     // 重置所有箭头
     private void resetAllArrows() {
         tvSort.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_arrow_down, 0);
@@ -270,11 +371,22 @@ public class CategoryFragment extends Fragment {
             hasSelection = true;
         }
 
-        hsvSelectedTags.setVisibility(hasSelection ? View.VISIBLE : View.GONE);
+        int newVisibility = hasSelection ? View.VISIBLE : View.GONE;
 
-        // 刷新RecyclerView，更新第一个item的边距
-        if (rvRecipes != null && rvRecipes.getAdapter() != null) {
-            rvRecipes.getAdapter().notifyItemChanged(0);
+        // 只有在可见性发生变化时才需要处理
+        if (hsvSelectedTags.getVisibility() != newVisibility) {
+            hsvSelectedTags.setVisibility(newVisibility);
+            // 等待布局完成后调整RecyclerView的padding
+            hsvSelectedTags.post(() -> {
+                calculateHeaderHeight();
+                adjustRecyclerViewPadding();
+            });
+        } else {
+            // 可见性不变但标签内容可能变化，直接调整padding
+            hsvSelectedTags.post(() -> {
+                calculateHeaderHeight();
+                adjustRecyclerViewPadding();
+            });
         }
     }
 
@@ -756,10 +868,19 @@ public class CategoryFragment extends Fragment {
         }
     }
 
-
     private void setupRecyclerView() {
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 1);
         rvRecipes.setLayoutManager(layoutManager);
+
+        // 初始padding，后续会动态调整
+        rvRecipes.setPadding(
+                dpToPx(8),  // left
+                0,          // top - 初始为0，后续动态调整
+                dpToPx(8),  // right
+                dpToPx(8)   // bottom
+        );
+        rvRecipes.setClipToPadding(false);
+
         adapter = new RecipeAdapter(getContext(), new ArrayList<>(), new RecipeAdapter.OnItemClickListener() {
             @Override
             public void onFavoriteClick(int recipeId, boolean isCurrentlyFavorite) {
@@ -792,36 +913,7 @@ public class CategoryFragment extends Fragment {
         }, RecipeAdapter.PAGE_TYPE_NORMAL);
         rvRecipes.setAdapter(adapter);
 
-        // 添加一个透明的占位视图，确保第一个item不会被头部遮挡
-        rvRecipes.addItemDecoration(new RecyclerView.ItemDecoration() {
-            @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
-                                       @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                // 注意：这里不要调用 super.getItemOffsets()
-
-                // 为第一个item添加顶部边距，避免被已选标签遮挡
-                int position = parent.getChildAdapterPosition(view);
-                if (position == 0) {
-                    // 获取已选标签的高度
-                    if (hsvSelectedTags != null && hsvSelectedTags.getVisibility() == View.VISIBLE) {
-                        // 如果已选标签可见，增加额外的边距
-                        int tagHeight = hsvSelectedTags.getHeight();
-                        if (tagHeight == 0) {
-                            // 如果高度还没测量，使用一个默认值
-                            tagHeight = dpToPx(30); // 默认30dp
-                        }
-                        outRect.top = tagHeight;
-                    } else {
-                        // 如果没有已选标签，添加一个较小的边距
-                        outRect.top = dpToPx(2); // 2dp的间距
-                    }
-                } else {
-                    // 非第一个item，添加一个较小的底部边距用于间隔
-                    outRect.bottom = dpToPx(4);
-                }
-            }
-        });
-
+        // 监听 RecyclerView 的滚动，滑动时隐藏下拉框
         rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -847,8 +939,6 @@ public class CategoryFragment extends Fragment {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
-
-
 
     private void resetAndLoad() {
         currentPage = 1;
@@ -896,8 +986,9 @@ public class CategoryFragment extends Fragment {
                         if (currentPage == 1) {
                             adapter.setRecipes(newRecipes);
                         } else {
+                            int oldSize = adapter.getRecipes().size();
                             adapter.getRecipes().addAll(newRecipes);
-                            adapter.notifyDataSetChanged();
+                            adapter.notifyItemRangeInserted(oldSize, newRecipes.size());
                         }
 
                         hasMore = currentPage < totalPages;

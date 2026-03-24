@@ -5,169 +5,166 @@
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
-    <!-- 头部布局 - 固定在顶部，不随滚动而滚动 -->
-    <LinearLayout
-        android:id="@+id/header_layout"
+    <!-- 头部布局 - 固定在顶部，使用AppBarLayout来正确处理滚动 -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:background="@android:color/white"
-        android:elevation="8dp"
-        android:translationZ="8dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:elevation="4dp">
 
-        <!-- 筛选条件行 - 拼多多风格 -->
         <LinearLayout
+            android:id="@+id/header_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingVertical="12dp"
-            android:paddingHorizontal="16dp"
-            android:background="@android:color/white">
+            android:orientation="vertical">
 
-            <!-- 综合/排序 -->
-            <FrameLayout
-                android:id="@+id/filter_sort"
-                android:layout_width="0dp"
+            <!-- 筛选条件行 - 拼多多风格 -->
+            <LinearLayout
+                android:id="@+id/filter_row_layout"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:orientation="horizontal"
+                android:paddingVertical="12dp"
+                android:paddingHorizontal="16dp"
+                android:background="@android:color/white">
 
-                <TextView
-                    android:id="@+id/tv_sort"
-                    android:layout_width="match_parent"
+                <!-- 综合/排序 -->
+                <FrameLayout
+                    android:id="@+id/filter_sort"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="综合"
-                    android:textColor="#333333"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:drawableEnd="@drawable/ic_arrow_down"
-                    android:paddingVertical="8dp"
-                    android:background="@drawable/bg_filter_item" />
-            </FrameLayout>
+                    android:layout_weight="1">
 
-            <!-- 工艺 -->
-            <FrameLayout
-                android:id="@+id/filter_method"
-                android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tv_sort"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="综合"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:drawableEnd="@drawable/ic_arrow_down"
+                        android:paddingVertical="8dp"
+                        android:background="@drawable/bg_filter_item" />
+                </FrameLayout>
+
+                <!-- 工艺 -->
+                <FrameLayout
+                    android:id="@+id/filter_method"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/tv_method"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="工艺"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:drawableEnd="@drawable/ic_arrow_down"
+                        android:paddingVertical="8dp"
+                        android:background="@drawable/bg_filter_item" />
+                </FrameLayout>
+
+                <!-- 口味 -->
+                <FrameLayout
+                    android:id="@+id/filter_taste"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/tv_taste"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="口味"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:drawableEnd="@drawable/ic_arrow_down"
+                        android:paddingVertical="8dp"
+                        android:background="@drawable/bg_filter_item" />
+                </FrameLayout>
+
+                <!-- 难度 -->
+                <FrameLayout
+                    android:id="@+id/filter_difficulty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/tv_difficulty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="难度"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:gravity="center"
+                        android:drawableEnd="@drawable/ic_arrow_down"
+                        android:paddingVertical="8dp"
+                        android:background="@drawable/bg_filter_item" />
+                </FrameLayout>
+
+                <!-- 重置按钮 -->
+                <FrameLayout
+                    android:id="@+id/filter_reset"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center">
+
+                    <TextView
+                        android:id="@+id/tv_reset"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="5dp"
+                        android:layout_gravity="center"
+                        android:text="重置"
+                        android:textColor="#FF6B4A"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/bg_filter_reset" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- 已选条件标签 -->
+            <HorizontalScrollView
+                android:id="@+id/hsv_selected_tags"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone"
+                android:background="@android:color/white">
 
-                <TextView
-                    android:id="@+id/tv_method"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="工艺"
-                    android:textColor="#333333"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:drawableEnd="@drawable/ic_arrow_down"
-                    android:paddingVertical="8dp"
-                    android:background="@drawable/bg_filter_item" />
-            </FrameLayout>
-
-            <!-- 口味 -->
-            <FrameLayout
-                android:id="@+id/filter_taste"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
-
-                <TextView
-                    android:id="@+id/tv_taste"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="口味"
-                    android:textColor="#333333"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:drawableEnd="@drawable/ic_arrow_down"
-                    android:paddingVertical="8dp"
-                    android:background="@drawable/bg_filter_item" />
-            </FrameLayout>
-
-            <!-- 难度 -->
-            <FrameLayout
-                android:id="@+id/filter_difficulty"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
-
-                <TextView
-                    android:id="@+id/tv_difficulty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="难度"
-                    android:textColor="#333333"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:drawableEnd="@drawable/ic_arrow_down"
-                    android:paddingVertical="8dp"
-                    android:background="@drawable/bg_filter_item" />
-            </FrameLayout>
-
-            <!-- 重置按钮 -->
-            <FrameLayout
-                android:id="@+id/filter_reset"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center">
-
-                <TextView
-                    android:id="@+id/tv_reset"
+                <LinearLayout
+                    android:id="@+id/ll_selected_tags"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="5dp"
-                    android:layout_gravity="center"
-                    android:text="重置"
-                    android:textColor="#FF6B4A"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:background="@drawable/bg_filter_reset" />
-            </FrameLayout>
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
         </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- 已选条件标签 - 给一个固定的高度，避免遮挡 -->
-        <HorizontalScrollView
-            android:id="@+id/hsv_selected_tags"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="12dp"
-            android:visibility="gone"
-            android:background="@android:color/white">
+    <!-- 内容区域 - 使用NestedScrollView或直接使用RecyclerView，配合AppBarLayout的滚动行为 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_recipes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:visibility="visible"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-            <LinearLayout
-                android:id="@+id/ll_selected_tags"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" />
-        </HorizontalScrollView>
-    </LinearLayout>
-
-    <!-- 内容区域 - 添加顶部边距，为固定的头部预留空间 -->
+    <!-- 加载进度条 - 使用FrameLayout覆盖 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="?attr/actionBarSize"
-        android:paddingTop="?attr/actionBarSize">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- 添加一个占位视图，防止内容被头部遮挡 -->
-        <View
-            android:id="@+id/header_placeholder"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:visibility="invisible" />
-
-        <!-- RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_recipes"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="8dp"
-            android:clipToPadding="false"
-            android:visibility="visible" />
-
-        <!-- 加载进度条 -->
         <ProgressBar
             android:id="@+id/progressBar"
             style="?android:attr/progressBarStyle"
@@ -176,7 +173,6 @@
             android:layout_gravity="center"
             android:visibility="gone" />
 
-        <!-- 空状态视图 -->
         <TextView
             android:id="@+id/emptyView"
             android:layout_width="match_parent"
@@ -188,7 +184,7 @@
             android:textColor="#999999"
             android:visibility="visible" />
 
-        <!-- 遮罩层 - 覆盖在RecyclerView之上 -->
+        <!-- 遮罩层 -->
         <View
             android:id="@+id/v_mask"
             android:layout_width="match_parent"
@@ -199,7 +195,7 @@
             android:focusable="true" />
     </FrameLayout>
 
-    <!-- 下拉框容器 - 放在最上层，覆盖所有内容，但位置在头部下方 -->
+    <!-- 下拉框容器 - 放在最上层，使用FrameLayout悬浮 -->
     <FrameLayout
         android:id="@+id/dropdown_container"
         android:layout_width="match_parent"
