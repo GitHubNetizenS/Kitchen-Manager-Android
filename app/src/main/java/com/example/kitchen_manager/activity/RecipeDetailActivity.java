@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -22,6 +21,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -66,8 +66,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private ImageView ivBack;
     private List<CheckBox> ingredientCheckboxes = new ArrayList<>();
     private List<IngredientResponse> userIngredients = new ArrayList<>();
+    private FloatingActionButton fabAddToCart;
 
-    // 新增：视频相关组件
+    // 新增：购物车相关变量
+    private boolean isInCart = false;          // 当前菜谱是否在购物车中
+    private Call<ApiResponse<Boolean>> cartCheckCall;  // 用于取消请求
+
+    // 视频相关组件
     private CardView videoCard;
     private TextView videoLink;
 
@@ -97,12 +102,15 @@ public class RecipeDetailActivity extends AppCompatActivity {
         ingredientComparationText = findViewById(R.id.ingredient_comparation);
         progressBar = findViewById(R.id.progressBar);
         ivBack = findViewById(R.id.iv_back);
+        fabAddToCart = findViewById(R.id.fabAddToCart);
 
-        // 新增：初始化视频组件
         videoCard = findViewById(R.id.video_card);
         videoLink = findViewById(R.id.video_link);
 
         ivBack.setOnClickListener(v -> finish());
+
+        // 初始化购物车按钮（设置点击事件并获取初始状态）
+        setupCartButton();
 
         initDialogs();
         loadRecipeDetail();
@@ -111,12 +119,180 @@ public class RecipeDetailActivity extends AppCompatActivity {
             loadUserIngredients();
         }
 
-        // 新增：加载视频信息
         loadRecipeVideo();
     }
 
-    // 新增方法：加载菜谱视频
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从其他页面（如购物车）返回时，重新检查购物车状态，保持同步
+        if (userId != 0 && recipeId != 0) {
+            checkCartStatus();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 取消未完成的网络请求，避免内存泄漏
+        if (cartCheckCall != null && !cartCheckCall.isExecuted()) {
+            cartCheckCall.cancel();
+        }
+        if (depletionDialog != null && depletionDialog.isShowing()) {
+            depletionDialog.dismiss();
+        }
+        if (selectionDialog != null && selectionDialog.isShowing()) {
+            selectionDialog.dismiss();
+        }
+    }
+
+    // --------------------- 购物车相关逻辑（新增/修改）---------------------
+
+    /**
+     * 配置购物车悬浮按钮：设置点击事件，并获取当前购物车状态
+     */
+    private void setupCartButton() {
+        // 设置点击事件（替换原有的 addToCart 逻辑）
+        fabAddToCart.setOnClickListener(v -> toggleCart());
+
+        // 获取当前菜谱是否已在购物车中
+        if (userId != 0) {
+            checkCartStatus();
+        } else {
+            // 未登录时，将按钮置为未加入状态（不可点击或点击时提示登录）
+            updateCartIcon(false);
+            fabAddToCart.setOnClickListener(v -> {
+                Toast.makeText(RecipeDetailActivity.this, "请先登录", Toast.LENGTH_SHORT).show();
+            });
+        }
+    }
+
+    /**
+     * 检查当前菜谱是否在购物车中，并更新图标
+     */
+    private void checkCartStatus() {
+        if (userId == 0 || recipeId == 0) return;
+
+        // 显示进度条（可选，使用全局progressBar）
+        progressBar.setVisibility(View.VISIBLE);
+
+        ApiService apiService = ApiClient.getApiService();
+        cartCheckCall = apiService.checkIfInCart(userId, recipeId);
+        cartCheckCall.enqueue(new Callback<ApiResponse<Boolean>>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse<Boolean>> call,
+                                   @NonNull Response<ApiResponse<Boolean>> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Boolean> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200 && apiResponse.getData() != null) {
+                        isInCart = apiResponse.getData();
+                        updateCartIcon(isInCart);
+                        Log.d("CartStatus", "菜谱 " + recipeId + " 购物车状态: " + isInCart);
+                    } else {
+                        Log.e("CartStatus", "获取购物车状态失败: " + apiResponse.getMessage());
+                    }
+                } else {
+                    Log.e("CartStatus", "HTTP错误: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse<Boolean>> call, @NonNull Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Log.e("CartStatus", "网络错误: " + t.getMessage());
+                // 失败时默认未加入，但保持原有功能
+                isInCart = false;
+                updateCartIcon(false);
+            }
+        });
+    }
+
+    /**
+     * 切换购物车状态（加入/移除）
+     */
+    private void toggleCart() {
+        if (userId == 0) {
+            Toast.makeText(this, "请先登录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 防抖：禁用按钮，避免重复点击
+        fabAddToCart.setEnabled(false);
+        progressBar.setVisibility(View.VISIBLE);
+
+        // 记录操作前的状态，用于失败时回滚
+        final boolean previousState = isInCart;
+
+        ApiService apiService = ApiClient.getApiService();
+        Call<ApiResponse<Void>> call = apiService.toggleCart(userId, recipeId);
+        call.enqueue(new Callback<ApiResponse<Void>>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse<Void>> call,
+                                   @NonNull Response<ApiResponse<Void>> response) {
+                progressBar.setVisibility(View.GONE);
+                fabAddToCart.setEnabled(true);
+
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Void> apiResponse = response.body();
+                    if (apiResponse.getCode() == 200) {
+                        // 切换成功，反转本地状态并更新图标
+                        isInCart = !previousState;
+                        updateCartIcon(isInCart);
+
+                        // 提示用户操作结果
+                        String message = isInCart ? "已加入购物车" : "已从购物车移除";
+                        Toast.makeText(RecipeDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                        Log.d("CartToggle", "切换成功，新状态: " + isInCart);
+                    } else {
+                        // 服务器返回错误（如参数错误等）
+                        Toast.makeText(RecipeDetailActivity.this,
+                                "操作失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+                        // 保持原有图标不变（已经是 previousState 对应的图标）
+                    }
+                } else {
+                    Toast.makeText(RecipeDetailActivity.this,
+                            "服务器错误: " + response.code(), Toast.LENGTH_SHORT).show();
+                    // 保持原有图标
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse<Void>> call, @NonNull Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                fabAddToCart.setEnabled(true);
+                Toast.makeText(RecipeDetailActivity.this,
+                        "网络错误: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                // 网络失败，不改变本地状态，图标保持不变（已经正确显示 previousState）
+                Log.e("CartToggle", "请求失败", t);
+            }
+        });
+    }
+
+    /**
+     * 根据是否在购物车更新悬浮按钮图标
+     * @param inCart true表示已在购物车，显示“移除”图标；false表示未加入，显示“加入”图标
+     */
+    private void updateCartIcon(boolean inCart) {
+        if (inCart) {
+            // 已加入购物车：使用另一张图片（例如 ic_shopping_cart_remove）
+            // 注意：请确保项目中存在 R.drawable.ic_shopping_cart_remove 资源，
+            // 如果不存在，可替换为其他已有的资源（如 R.drawable.ic_cart_filled）或自行添加。
+            // 这里使用 ic_shopping_cart_remove 示意，实际使用时请根据项目资源修改。
+            fabAddToCart.setImageResource(R.drawable.buylist_1);
+            // 可选：改变背景色或添加提示文字（Tooltip）
+            fabAddToCart.setContentDescription("从购物车移除");
+        } else {
+            // 未加入购物车：显示加入购物车图标（原 tobuy 图标）
+            fabAddToCart.setImageResource(R.drawable.tobuy);
+            fabAddToCart.setContentDescription("加入购物车");
+        }
+    }
+
+    // --------------------- 原有代码（未做修改，仅保留）---------------------
+
     private void loadRecipeVideo() {
+        // ... 原有代码不变 ...
         ApiService apiService = ApiClient.getApiService();
         Call<ApiResponse<List<RecipeVideoResponse>>> call = apiService.getRecipeVideos(recipeId);
 
@@ -128,7 +304,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     ApiResponse<List<RecipeVideoResponse>> apiResponse = response.body();
                     if (apiResponse.getCode() == 200 && apiResponse.getData() != null
                             && !apiResponse.getData().isEmpty()) {
-                        // 获取第一个视频（根据你的需求，一个菜谱只有一个视频）
                         RecipeVideoResponse video = apiResponse.getData().get(0);
                         displayVideoLink(video);
                     } else {
@@ -146,19 +321,16 @@ public class RecipeDetailActivity extends AppCompatActivity {
         });
     }
 
-    // 新增方法：显示视频链接
     private void displayVideoLink(RecipeVideoResponse video) {
         if (video != null && video.getVideoUrl() != null && !video.getVideoUrl().isEmpty()) {
             videoCard.setVisibility(View.VISIBLE);
 
-            // 设置视频标题（如果需要显示平台信息）
             String linkText = "点击观看视频教程";
             if (video.getPlatform() != null) {
                 linkText = "点击观看 " + video.getPlatform() + " 视频教程";
             }
             videoLink.setText(linkText);
 
-            // 设置点击事件，跳转到浏览器
             videoLink.setOnClickListener(v -> {
                 try {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(video.getVideoUrl()));
@@ -358,17 +530,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
             depletionDialog.dismiss();
             addUserHistory();
         });
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (depletionDialog != null && depletionDialog.isShowing()) {
-            depletionDialog.dismiss();
-        }
-        if (selectionDialog != null && selectionDialog.isShowing()) {
-            selectionDialog.dismiss();
-        }
     }
 
     private void showDepletionDialog() {
@@ -646,4 +807,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
             }
         });
     }
+
+    // 移除原有的 addToCart 方法，因为已用 toggleCart 替代
 }
