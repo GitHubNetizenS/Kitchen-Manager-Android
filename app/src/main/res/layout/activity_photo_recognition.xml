@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <!-- 标题 -->
         <TextView
@@ -18,99 +18,135 @@
             android:layout_height="wrap_content"
             android:text="食材入库"
             android:textColor="#FF5722"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="28dp"
+            android:letterSpacing="0.02" />
 
-        <!-- 功能选择 -->
-        <LinearLayout
+        <!-- 功能选择卡片 -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginBottom="16dp">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="20dp">
 
-            <Button
-                android:id="@+id/btn_food"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="食材图片"
-                android:backgroundTint="#FF9800"
-                android:background="@drawable/round_corner_n"
-                android:textColor="@android:color/white"
-                android:textAllCaps="false"
-                android:layout_marginEnd="8dp"/>
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="12dp">
 
-            <Button
-                android:id="@+id/btn_receipt"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="超市小票"
-                android:backgroundTint="#FF9800"
-                android:background="@drawable/round_corner_n"
-                android:textColor="@android:color/white"
-                android:textAllCaps="false"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"/>
+                <Button
+                    android:id="@+id/btn_food"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="食材图片"
+                    android:backgroundTint="#FF9800"
+                    android:background="@drawable/round_corner_n"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textAllCaps="false"
+                    android:layout_marginEnd="6dp"
+                    android:elevation="0dp"
+                    android:stateListAnimator="@null" />
 
-            <Button
-                android:id="@+id/btn_text"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="文字输入"
-                android:backgroundTint="#FF9800"
-                android:background="@drawable/round_corner_n"
-                android:textColor="@android:color/white"
-                android:textAllCaps="false"
-                android:layout_marginStart="8dp"/>
-        </LinearLayout>
+                <Button
+                    android:id="@+id/btn_receipt"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="超市小票"
+                    android:backgroundTint="#FF9800"
+                    android:background="@drawable/round_corner_n"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textAllCaps="false"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"
+                    android:elevation="0dp"
+                    android:stateListAnimator="@null" />
+
+                <Button
+                    android:id="@+id/btn_text"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="文字输入"
+                    android:backgroundTint="#FF9800"
+                    android:background="@drawable/round_corner_n"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textAllCaps="false"
+                    android:layout_marginStart="6dp"
+                    android:elevation="0dp"
+                    android:stateListAnimator="@null" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <!-- 操作按钮 -->
         <Button
             android:id="@+id/btn_upload"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:text="选择图片"
             android:background="@drawable/round_corner_n"
-            android:backgroundTint="@color/orange_dark"
+            android:backgroundTint="#FF6B2C"
             android:textColor="@android:color/white"
+            android:textSize="16sp"
             android:textAllCaps="false"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="20dp"
+            android:elevation="2dp" />
 
-        <!-- 文字输入区域 -->
-        <LinearLayout
+        <!-- 文字输入区域卡片 -->
+        <androidx.cardview.widget.CardView
             android:id="@+id/text_input_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:visibility="gone"
-            android:layout_marginBottom="16dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="20dp">
 
-            <EditText
-                android:id="@+id/et_text_input"
-                android:layout_width="0dp"
-                android:layout_height="45dp"
-                android:layout_weight="1"
-                android:padding="10dp"
-                android:hint="输入食材（多个用逗号分隔）"
-                android:inputType="text"
-                android:background="#FFFFFF"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp">
 
-            <Button
-                android:id="@+id/btn_submit_text"
-                android:layout_width="70dp"
-                android:layout_height="55dp"
-                android:text="添加"
-                android:backgroundTint="#FF9800"
-                android:background="@drawable/round_corner"
-                android:textColor="@android:color/white"
-                android:layout_marginStart="8dp"/>
-        </LinearLayout>
+                <EditText
+                    android:id="@+id/et_text_input"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:padding="12dp"
+                    android:hint="输入食材，多个用逗号分隔"
+                    android:textSize="14sp"
+                    android:inputType="text"
+                    android:background="@drawable/edittext_border"
+                    android:backgroundTint="#EEEEEE" />
+
+                <Button
+                    android:id="@+id/btn_submit_text"
+                    android:layout_width="80dp"
+                    android:layout_height="48dp"
+                    android:text="添加"
+                    android:backgroundTint="#FF9800"
+                    android:background="@drawable/round_corner"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textAllCaps="false"
+                    android:layout_marginStart="12dp"
+                    android:elevation="0dp"
+                    android:stateListAnimator="@null" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <!-- 结果标题 -->
         <TextView
@@ -121,49 +157,71 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="12dp" />
 
-        <!-- 结果列表 -->
+        <!-- 结果列表卡片 -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/ll_result_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="4dp" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- 操作按钮组 -->
         <LinearLayout
-            android:id="@+id/ll_result_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:padding="8dp">
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
 
-            <!-- 结果项将动态添加 -->
+            <Button
+                android:id="@+id/btn_add_item"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="+ 添加食材"
+                android:background="@drawable/round_corner_n"
+                android:backgroundTint="#FF9800"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textAllCaps="false"
+                android:layout_marginEnd="8dp"
+                android:elevation="2dp" />
+
+            <Button
+                android:id="@+id/btn_done"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="✓ 完成"
+                android:background="@drawable/round_corner_n"
+                android:backgroundTint="#4CAF50"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textAllCaps="false"
+                android:layout_marginStart="8dp"
+                android:elevation="2dp" />
         </LinearLayout>
-
-        <!-- 添加食材按钮 -->
-        <Button
-            android:id="@+id/btn_add_item"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="+ 添加食材"
-            android:background="@drawable/round_corner_n"
-            android:backgroundTint="#FF9800"
-            android:textColor="@android:color/white"
-            android:textAllCaps="false"
-            android:layout_marginTop="8dp"/>
-        <Button
-            android:id="@+id/btn_done"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="完成"
-            android:background="@drawable/round_corner_n"
-            android:backgroundTint="#FF9800"
-            android:textColor="@android:color/white"
-            android:textAllCaps="false"
-            android:layout_marginTop="8dp" />
 
         <!-- 进度条 -->
         <ProgressBar
             android:id="@+id/progress_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_gravity="center"
             android:visibility="gone"
-            android:layout_marginTop="16dp"/>
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:indeterminateTint="#FF9800" />
     </LinearLayout>
 </ScrollView>
