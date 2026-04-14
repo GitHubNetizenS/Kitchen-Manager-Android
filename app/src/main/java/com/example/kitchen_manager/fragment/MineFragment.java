@@ -14,7 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.cardview.widget.CardView;
@@ -84,6 +83,13 @@ public class MineFragment extends Fragment {
         initData();
         setupListeners(view);
         setupAdapters();
+        // 等待布局完成后设置指示器初始宽度
+        tabFavorite.post(() -> {
+            int tabWidth = tabFavorite.getWidth();
+            ViewGroup.LayoutParams params = tabIndicator.getLayoutParams();
+            params.width = tabWidth;
+            tabIndicator.setLayoutParams(params);
+        });
         loadUserData();
     }
 
@@ -245,9 +251,14 @@ public class MineFragment extends Fragment {
         }
 
         // 移动指示器
+        TextView targetTab = showFavorite ? tabFavorite : tabHistory;
+        int targetWidth = targetTab.getWidth();
+        ViewGroup.LayoutParams params = tabIndicator.getLayoutParams();
+        params.width = targetWidth;
+        tabIndicator.setLayoutParams(params);
         tabIndicator.animate()
                 .translationX(showFavorite ? 0 : tabFavorite.getWidth())
-                .setDuration(200)
+                .setDuration(50)
                 .start();
 
         sortScroll.setVisibility(View.VISIBLE);
@@ -257,11 +268,13 @@ public class MineFragment extends Fragment {
         if (isTime) {
             btnSortTime.setBackgroundResource(R.drawable.bg_tab_selected);
             btnSortTime.setTextColor(getResources().getColor(android.R.color.white));
-            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal);
-            btnSortMatch.setTextColor(getResources().getColor(R.color.gray));
+            // 修正为 bg_tab_normal_new
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal_new);
+            btnSortMatch.setTextColor(getResources().getColor(R.color.orange));
         } else {
-            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal);
-            btnSortTime.setTextColor(getResources().getColor(R.color.gray));
+            // 修正为 bg_tab_normal_new
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal_new);
+            btnSortTime.setTextColor(getResources().getColor(R.color.orange));
             btnSortMatch.setBackgroundResource(R.drawable.bg_tab_selected);
             btnSortMatch.setTextColor(getResources().getColor(android.R.color.white));
         }

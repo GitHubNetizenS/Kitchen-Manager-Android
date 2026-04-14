@@ -1,90 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <FrameLayout
+    <!-- 固定的分类标签栏 -->
+    <LinearLayout
+        android:id="@+id/tab_bar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
-        <!-- 分类标签 -->
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
+<!--        <Button android:id="@+id/btn_category_all"-->
+<!--            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"-->
+<!--            android:layout_marginEnd="6dp"-->
+<!--            android:background="@drawable/bg_tab_selected"-->
+<!--            android:text="全部" android:textColor="#FFFFFF" android:textSize="14sp"-->
+<!--            android:stateListAnimator="@null" />-->
 
-            <LinearLayout
+        <LinearLayout
+            android:id="@+id/tab_category_all"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_tab_selected"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_all"
+                android:tag="tab_icon"
+                app:tint="#FFFFFF" />
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:text="全部"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:tag="tab_text" />
+        </LinearLayout>
 
-                <Button
-                    android:id="@+id/btn_category_all"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
-                    android:background="@drawable/bg_tab_selected"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="全部"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp" />
-                <Button
-                    android:id="@+id/btn_category_breakfast"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
-                    android:background="@drawable/bg_tab_normal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="早餐"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
+        <LinearLayout
+            android:id="@+id/tab_category_breakfast"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_tab_normal_new"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
 
-                <Button
-                    android:id="@+id/btn_category_other"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
-                    android:background="@drawable/bg_tab_normal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="正餐"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_breakfast"
+                android:tag="tab_icon"
+                app:tint="#FF8C00" />
 
-                <Button
-                    android:id="@+id/btn_category_snack"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginRight="12dp"
-                    android:background="@drawable/bg_tab_normal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="加餐"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </HorizontalScrollView>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="早餐"
+                android:textColor="#FF8C00"
+                android:textSize="14sp"
+                android:tag="tab_text" />
+        </LinearLayout>
 
-        <!-- 食材充足的菜谱 -->
+        <LinearLayout
+            android:id="@+id/tab_category_other"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_tab_normal_new"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
 
-        <!-- 菜谱列表 -->
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_other"
+                android:tag="tab_icon"
+                app:tint="#FF8C00" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="正餐"
+                android:textColor="#FF8C00"
+                android:textSize="14sp"
+                android:tag="tab_text" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tab_category_snack"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_tab_normal_new"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_snacks"
+                android:tag="tab_icon"
+                app:tint="#FF8C00" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="加餐"
+                android:textColor="#FF8C00"
+                android:textSize="14sp"
+                android:tag="tab_text" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 内容区域 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tab_bar">
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_recipes"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="50dp"
             android:padding="0dp"
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             app:spanCount="1"
             tools:listitem="@layout/item_recipe_recommend" />
 
-        <!-- 加载进度条 -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
@@ -92,7 +165,6 @@
             android:layout_gravity="center"
             android:visibility="gone" />
 
-        <!-- 空状态视图 -->
         <TextView
             android:id="@+id/emptyView"
             android:layout_width="match_parent"
@@ -103,5 +175,18 @@
             android:textSize="18sp"
             android:visibility="visible" />
 
+        <!-- 回到顶部悬浮按钮 -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_scroll_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:contentDescription="回到顶部"
+            android:src="@drawable/ic_arrow_upward"
+            android:visibility="gone"
+            app:backgroundTint="#FF8C00"
+            app:tint="#FFFFFF"
+            app:elevation="6dp" />
     </FrameLayout>
-</androidx.core.widget.NestedScrollView>
+</RelativeLayout>

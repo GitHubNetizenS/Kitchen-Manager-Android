@@ -88,41 +88,39 @@
             android:layout_height="1dp"
             android:background="#F0F0F0" />
         <!-- 分类标签区域 -->
-        <HorizontalScrollView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#FFFFFF"
-            android:padding="8dp">
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+            <Button
+                android:id="@+id/btn_sort_time"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_tab_selected"
+                android:text="烹饪时间"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:stateListAnimator="@null" />
 
-                <Button
-                    android:id="@+id/btn_sort_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/bg_tab_selected"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="烹饪时间"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/btn_sort_match"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_tab_normal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="匹配值"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </HorizontalScrollView>
+            <Button
+                android:id="@+id/btn_sort_match"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_tab_normal_new"
+                android:text="匹配值"
+                android:textColor="#FF8C00"
+                android:textSize="14sp"
+                android:stateListAnimator="@null" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- 可滚动的内容区域 -->
@@ -149,6 +147,19 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:visibility="gone" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_scroll_top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:contentDescription="回到顶部"
+            android:src="@drawable/ic_arrow_upward"
+            android:visibility="gone"
+            app:backgroundTint="#FF8C00"
+            app:tint="#FFFFFF"
+            app:elevation="6dp" />
 
         <!-- 空状态视图 -->
         <TextView

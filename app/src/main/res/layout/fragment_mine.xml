@@ -263,7 +263,7 @@
             <!-- 标签指示器 -->
             <View
                 android:id="@+id/tab_indicator"
-                android:layout_width="60dp"
+                android:layout_width="0dp"
                 android:layout_height="3dp"
                 android:layout_marginStart="16dp"
                 android:background="#FF8C00" />
@@ -276,44 +276,43 @@
                 android:background="#E0E0E0" />
 
             <!-- 筛选按钮栏 - 始终显示 -->
-            <HorizontalScrollView
+            <LinearLayout
                 android:id="@+id/sort_scroll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
+                android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
                 android:visibility="visible">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btn_sort_time"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_tab_selected"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="收藏时间"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:stateListAnimator="@null" />
 
-                    <Button
-                        android:id="@+id/btn_sort_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_tab_selected"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:text="收藏时间"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
-
-                    <Button
-                        android:id="@+id/btn_sort_match"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_tab_normal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:text="匹配值"
-                        android:textColor="#666666"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </HorizontalScrollView>
+                <Button
+                    android:id="@+id/btn_sort_match"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_normal_new"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="匹配值"
+                    android:textColor="#FF8C00"
+                    android:textSize="12sp"
+                    android:stateListAnimator="@null" />
+            </LinearLayout>
 
             <!-- 分隔线2 -->
             <View

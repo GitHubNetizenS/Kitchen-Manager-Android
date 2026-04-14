@@ -12,6 +12,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,6 +47,7 @@ public class SearchActivity extends AppCompatActivity {
     private ApiService apiService;
     private String currentKeyword = "";
     private String currentSortType = "all"; // 默认排序类型
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabScrollTop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +75,7 @@ public class SearchActivity extends AppCompatActivity {
         btnAll = findViewById(R.id.btn_all);
         btnTagMatch = findViewById(R.id.btn_tag_match);
         btnIngredientMatch = findViewById(R.id.btn_ingredient_match);
+        fabScrollTop = findViewById(R.id.fab_scroll_top);
     }
 
     private void setupListeners() {
@@ -114,6 +117,21 @@ public class SearchActivity extends AppCompatActivity {
                 searchRecipes(currentKeyword, currentSortType);
             }
         });
+
+        rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (rv.computeVerticalScrollOffset() > 300) {
+                    fabScrollTop.setVisibility(View.VISIBLE);
+                } else {
+                    fabScrollTop.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        fabScrollTop.setOnClickListener(v ->
+                rvRecipes.smoothScrollToPosition(0)
+        );
     }
 
     private void setupRecyclerView() {
@@ -237,19 +255,14 @@ public class SearchActivity extends AppCompatActivity {
     }
 
     private void updateButtonState(int selectedIndex) {
-        int orangeLight = getResources().getColor(R.color.orange_light);
-        int lightGray = getResources().getColor(R.color.light_gray);
-        int white = getResources().getColor(android.R.color.white);
-        int black = getResources().getColor(android.R.color.black);
+        btnAll.setBackgroundResource(selectedIndex == 0 ? R.drawable.bg_tab_selected : R.drawable.bg_tab_normal_new);
+        btnAll.setTextColor(selectedIndex == 0 ? 0xFFFFFFFF : 0xFFFF8C00);
 
-        btnAll.setBackgroundColor(selectedIndex == 0 ? orangeLight : lightGray);
-        btnAll.setTextColor(selectedIndex == 0 ? white : black);
+        btnTagMatch.setBackgroundResource(selectedIndex == 1 ? R.drawable.bg_tab_selected : R.drawable.bg_tab_normal_new);
+        btnTagMatch.setTextColor(selectedIndex == 1 ? 0xFFFFFFFF : 0xFFFF8C00);
 
-        btnTagMatch.setBackgroundColor(selectedIndex == 1 ? orangeLight : lightGray);
-        btnTagMatch.setTextColor(selectedIndex == 1 ? white : black);
-
-        btnIngredientMatch.setBackgroundColor(selectedIndex == 2 ? orangeLight : lightGray);
-        btnIngredientMatch.setTextColor(selectedIndex == 2 ? white : black);
+        btnIngredientMatch.setBackgroundResource(selectedIndex == 2 ? R.drawable.bg_tab_selected : R.drawable.bg_tab_normal_new);
+        btnIngredientMatch.setTextColor(selectedIndex == 2 ? 0xFFFFFFFF : 0xFFFF8C00);
     }
 
     // 收藏菜谱

@@ -11,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -48,6 +49,7 @@ public class FavoriteActivity extends AppCompatActivity {
     private boolean isEditMode = false;
     private boolean isTimeSort = true;
     private int pendingDeletes = 0;
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabScrollTop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +81,7 @@ public class FavoriteActivity extends AppCompatActivity {
         tvSelectAll = findViewById(R.id.tv_select_all);
         tvCancel = findViewById(R.id.tv_cancel);
         tvDelete = findViewById(R.id.tv_delete);
+        fabScrollTop = findViewById(R.id.fab_scroll_top);
 
         // 初始化按钮状态
         updateButtonState(true);
@@ -107,6 +110,21 @@ public class FavoriteActivity extends AppCompatActivity {
         tvCancel.setOnClickListener(v -> exitEditMode());
 
         tvDelete.setOnClickListener(v -> deleteSelectedItems());
+
+        rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (rv.computeVerticalScrollOffset() > 300) {
+                    fabScrollTop.setVisibility(View.VISIBLE);
+                } else {
+                    fabScrollTop.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        fabScrollTop.setOnClickListener(v ->
+                rvRecipes.smoothScrollToPosition(0)
+        );
 
         rvRecipes.setLayoutManager(new GridLayoutManager(this, 1));
 
@@ -355,19 +373,16 @@ public class FavoriteActivity extends AppCompatActivity {
     }
 
     private void updateButtonState(boolean isTimeSort) {
-        int selectedColor = getResources().getColor(android.R.color.white);
-        int normalColor = getResources().getColor(R.color.gray);
-
         if (isTimeSort) {
             btnSortTime.setBackgroundResource(R.drawable.bg_tab_selected);
-            btnSortTime.setTextColor(selectedColor);
-            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal);
-            btnSortMatch.setTextColor(normalColor);
+            btnSortTime.setTextColor(0xFFFFFFFF);
+            btnSortMatch.setBackgroundResource(R.drawable.bg_tab_normal_new);
+            btnSortMatch.setTextColor(0xFFFF8C00);
         } else {
-            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal);
-            btnSortTime.setTextColor(normalColor);
+            btnSortTime.setBackgroundResource(R.drawable.bg_tab_normal_new);
+            btnSortTime.setTextColor(0xFFFF8C00);
             btnSortMatch.setBackgroundResource(R.drawable.bg_tab_selected);
-            btnSortMatch.setTextColor(selectedColor);
+            btnSortMatch.setTextColor(0xFFFFFFFF);
         }
     }
 

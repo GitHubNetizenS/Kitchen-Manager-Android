@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,11 +21,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
-import com.bumptech.glide.Glide;
 import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.activity.RecipeDetailActivity;
 import com.example.kitchen_manager.adapters.RecipeAdapter;
@@ -32,17 +31,13 @@ import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.api.ApiClient;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
-import com.google.gson.Gson;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -54,8 +49,8 @@ public class RecommendFragment extends Fragment {
     private RecipeAdapter adapter;
     private ProgressBar progressBar;
     private TextView emptyView;
-    private Button btnAll, btnBreakfast, btnOther, btnSnack;
-    private Map<Button, String> buttonTagMap = new HashMap<>();
+    private View tabAll, tabBreakfast, tabOther, tabSnack;
+    private Map<View, String> tabTagMap = new HashMap<>();
     private Map<String, Integer> tagMap = new HashMap<>();
     private String currentTag = "全部";
     private int userId = -1;
@@ -72,6 +67,7 @@ public class RecommendFragment extends Fragment {
     private int requestTagId = 0;   // 当前请求对应的分类ID（用于避免旧请求覆盖新数据）。
     private static final int PRELOAD_THRESHOLD = 5;       // 离底部多少条数据触发预加载。
     private int requestGeneration = 0;
+    private com.google.android.material.floatingactionbutton.FloatingActionButton fabScrollTop;
 
     @Nullable
     @Override
@@ -97,29 +93,44 @@ public class RecommendFragment extends Fragment {
         emptyView.setVisibility(View.GONE);
         rvRecipes.setVisibility(View.VISIBLE);
 
-        btnAll = view.findViewById(R.id.btn_category_all);
-        btnBreakfast = view.findViewById(R.id.btn_category_breakfast);
-        btnOther = view.findViewById(R.id.btn_category_other);
-        btnSnack = view.findViewById(R.id.btn_category_snack);
+        tabAll = view.findViewById(R.id.tab_category_all);
+        tabBreakfast = view.findViewById(R.id.tab_category_breakfast);
+        tabOther = view.findViewById(R.id.tab_category_other);
+        tabSnack = view.findViewById(R.id.tab_category_snack);
+        fabScrollTop = view.findViewById(R.id.fab_scroll_top);
 
-        buttonTagMap.put(btnAll, "全部");
-        buttonTagMap.put(btnBreakfast, "早餐");
-        buttonTagMap.put(btnOther, "正餐");
-        buttonTagMap.put(btnSnack, "加餐");
+        tabTagMap.put(tabAll, "全部");
+        tabTagMap.put(tabBreakfast, "早餐");
+        tabTagMap.put(tabOther, "正餐");
+        tabTagMap.put(tabSnack, "加餐");
 
-        updateButtonState(btnAll);
+        updateButtonState(tabAll);
 
         View.OnClickListener categoryClickListener = v -> {
-            Button clicked = (Button) v;
-            String tag = buttonTagMap.get(clicked);
+            String tag = tabTagMap.get(v);
             loadRecipesByTag(tag);
-            updateButtonState(clicked);
+            updateButtonState(v);
         };
 
-        btnAll.setOnClickListener(categoryClickListener);
-        btnBreakfast.setOnClickListener(categoryClickListener);
-        btnOther.setOnClickListener(categoryClickListener);
-        btnSnack.setOnClickListener(categoryClickListener);
+        tabAll.setOnClickListener(categoryClickListener);
+        tabBreakfast.setOnClickListener(categoryClickListener);
+        tabOther.setOnClickListener(categoryClickListener);
+        tabSnack.setOnClickListener(categoryClickListener);
+
+        rvRecipes.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (rv.computeVerticalScrollOffset() > 300) {
+                    fabScrollTop.setVisibility(View.VISIBLE);
+                } else {
+                    fabScrollTop.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        fabScrollTop.setOnClickListener(v ->
+                rvRecipes.smoothScrollToPosition(0)
+        );
 
         StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         rvRecipes.setLayoutManager(layoutManager);
@@ -529,17 +540,25 @@ public class RecommendFragment extends Fragment {
     /**
      * 更新按钮状态
      */
-    private void updateButtonState(Button selectedButton) {
-        int orangeLight = ContextCompat.getColor(requireContext(), R.color.orange_light);
-        int lightGray = ContextCompat.getColor(requireContext(), R.color.light_gray);
+    private void updateButtonState(View selectedTab) {
+        int white = android.graphics.Color.WHITE;
+        int orange = android.graphics.Color.parseColor("#FF8C00");
 
-        for (Button button : buttonTagMap.keySet()) {
-            if (button == selectedButton) {
-                button.setBackgroundColor(orangeLight);
-                button.setTextColor(Color.WHITE);
+        for (View tab : tabTagMap.keySet()) {
+            // 利用 tag 找出容器内的子控件 (如果该 Tab 没有图标，iv 将为 null)
+            ImageView iv = tab.findViewWithTag("tab_icon");
+            TextView tv = tab.findViewWithTag("tab_text");
+
+            if (tab == selectedTab) {
+                // 选中状态：背景变选中态，图文变白
+                tab.setBackgroundResource(R.drawable.bg_tab_selected);
+                if (tv != null) tv.setTextColor(white);
+                if (iv != null) iv.setColorFilter(white);
             } else {
-                button.setBackgroundColor(lightGray);
-                button.setTextColor(Color.BLACK);
+                // 未选中状态：背景变正常态，图文变橙色
+                tab.setBackgroundResource(R.drawable.bg_tab_normal_new);
+                if (tv != null) tv.setTextColor(orange);
+                if (iv != null) iv.setColorFilter(orange);
             }
         }
     }
