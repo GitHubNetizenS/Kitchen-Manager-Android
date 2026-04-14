@@ -36,8 +36,10 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -68,6 +70,7 @@ public class RecommendFragment extends Fragment {
     private static final int PRELOAD_THRESHOLD = 5;       // 离底部多少条数据触发预加载。
     private int requestGeneration = 0;
     private com.google.android.material.floatingactionbutton.FloatingActionButton fabScrollTop;
+    private boolean isDataLoaded = false;
 
     @Nullable
     @Override
@@ -199,6 +202,63 @@ public class RecommendFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 当从其他页面（如菜谱详情）返回时，同步购物车状态
+        if (isDataLoaded && userId != -1 && adapter != null && adapter.getRecipes() != null) {
+            refreshCartStatusForAllRecipes();
+        }
+    }
+
+    /**
+     * 刷新当前列表中所有菜谱的购物车状态（批量同步）
+     */
+    private void refreshCartStatusForAllRecipes() {
+        if (userId == -1 || adapter == null) return;
+
+        List<RecipeResponse> recipes = adapter.getRecipes();
+        if (recipes == null || recipes.isEmpty()) return;
+
+        // 调用批量获取购物车菜谱ID的接口
+        apiService.getCartRecipes(userId).enqueue(new Callback<ApiResponse<List<Integer>>>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse<List<Integer>>> call,
+                                   @NonNull Response<ApiResponse<List<Integer>>> response) {
+                if (response.isSuccessful() && response.body() != null
+                        && response.body().getCode() == 200
+                        && response.body().getData() != null) {
+
+                    List<Integer> cartRecipeIds = response.body().getData();
+                    Set<Integer> cartSet = new HashSet<>(cartRecipeIds);
+
+                    // 遍历当前适配器中的所有菜谱，更新购物车状态
+                    boolean needRefresh = false;
+                    for (int i = 0; i < recipes.size(); i++) {
+                        RecipeResponse recipe = recipes.get(i);
+                        boolean shouldBeInCart = cartSet.contains(recipe.getRecipeId());
+                        if (recipe.isInShoppingCart() != shouldBeInCart) {
+                            recipe.setInShoppingCart(shouldBeInCart);
+                            needRefresh = true;
+                        }
+                    }
+                    if (needRefresh) {
+                        adapter.notifyDataSetChanged();  // 或者局部刷新所有变化的项
+                        Log.d("RecommendFragment", "购物车状态已批量同步");
+                    }
+                } else {
+                    Log.e("RecommendFragment", "获取购物车列表失败");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse<List<Integer>>> call, @NonNull Throwable t) {
+                Log.e("RecommendFragment", "批量同步购物车状态失败", t);
+            }
+        });
+    }
+
+
     /**
      * 根据标签加载菜谱
      */
@@ -227,7 +287,10 @@ public class RecommendFragment extends Fragment {
         if (isLoading || !hasMore) return;
 
         isLoading = true;
-        if (page == 1) progressBar.setVisibility(View.VISIBLE);
+        if (page == 1) {
+            progressBar.setVisibility(View.VISIBLE);
+            isDataLoaded = true;
+        }
 
         int effectiveUserId = userId != -1 ? userId : 0;
 

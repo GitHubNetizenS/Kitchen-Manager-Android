@@ -42,15 +42,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- 加载进度条 -->
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginVertical="32dp"
-                android:visibility="gone" />
-
             <!-- 食谱图片 -->
             <ImageView
                 android:id="@+id/recipe_image"
@@ -256,6 +247,34 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <!-- 加载进度条 -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginVertical="32dp"
+        android:visibility="gone" />
+
+    <!-- 加入购物车按钮（位于动手做按钮上方） -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddToCart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="100dp"
+        android:layout_marginEnd="24dp"
+        android:contentDescription="加入购物车"
+        app:backgroundTint="#88FF6B2C"
+        app:srcCompat="@drawable/tobuy"
+        app:tint="#FFFFFF"
+        app:maxImageSize="40dp"
+        android:scaleType="center"
+        app:rippleColor="#FF9E40"
+        app:elevation="0dp"
+        app:fabSize="auto"/>
 
     <!-- 底部悬浮按钮 -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -20,6 +20,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -68,9 +69,9 @@ public class PhotoRecognitionActivity extends AppCompatActivity {
     private static final int STORAGE_PERMISSION_CODE = 101;
 
     private Button btnUpload;
-    private LinearLayout llResultContainer;
+    private ViewGroup llResultContainer;
     private ProgressBar progressBar;
-    private LinearLayout textInputLayout;
+    private ViewGroup textInputLayout;
     private EditText etTextInput;
     private Button btnSubmitText;
     private Button btnFood;
