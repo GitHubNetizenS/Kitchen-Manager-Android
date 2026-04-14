@@ -266,11 +266,12 @@
         android:layout_alignParentEnd="true"
         android:layout_margin="24dp"
         android:contentDescription="动手做"
+        android:padding="12dp"
         app:elevation="0dp"
         app:backgroundTint="#88FF6B2C"
         app:srcCompat="@drawable/ic_cook"
         app:tint="#FFFFFF"
-        app:maxImageSize="60dp"
+        app:maxImageSize="50dp"
         android:scaleType="center"
         app:rippleColor="#FF9E40"
         app:fabSize="auto" />
