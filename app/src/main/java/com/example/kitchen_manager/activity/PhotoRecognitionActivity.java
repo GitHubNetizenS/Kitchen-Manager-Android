@@ -88,7 +88,7 @@ public class PhotoRecognitionActivity extends AppCompatActivity {
 
     // 火山引擎豆包API配置
     private static final String API_KEY = "4f9b835d-b78b-4643-8d4d-8d33fe3fe4f1";
-    private static final String MODEL_ID = "ep-20250701144300-4gmgs";
+    private static final String MODEL_ID = "ep-20260414213453-cqdw5";
 
     // 使用Retrofit客户端
     private DoubaoApiService doubaoApiService;
