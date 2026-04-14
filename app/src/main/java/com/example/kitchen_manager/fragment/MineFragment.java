@@ -34,6 +34,7 @@ import com.example.kitchen_manager.adapters.RecipeAdapter;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.response.ApiResponse;
 import com.example.kitchen_manager.response.RecipeResponse;
+import com.example.kitchen_manager.utils.ImageLoader;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -311,11 +312,10 @@ public class MineFragment extends Fragment {
             tvTitle.setText(user.getTitle());
 
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                Picasso.get()
-                        .load(user.getAvatarUrl() + "?t=" + System.currentTimeMillis())
-                        .placeholder(R.drawable.ic_logo_orange)
-                        .error(R.drawable.ic_logo_orange)
-                        .into(ivAvatar);
+                // 使用 ImageLoader 工具类加载图片
+                ImageLoader.loadImage(user.getAvatarUrl(), ivAvatar);
+            } else {
+                ivAvatar.setImageResource(R.drawable.ic_logo_orange);
             }
         }
     }

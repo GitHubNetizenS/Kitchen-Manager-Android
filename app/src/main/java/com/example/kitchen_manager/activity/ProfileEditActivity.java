@@ -24,6 +24,7 @@ import com.example.kitchen_manager.R;
 import com.example.kitchen_manager.api.ApiService;
 import com.example.kitchen_manager.models.User;
 import com.example.kitchen_manager.response.ApiResponse;
+import com.example.kitchen_manager.utils.ImageLoader;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
@@ -215,11 +216,7 @@ public class ProfileEditActivity extends AppCompatActivity {
                         ApiResponse<String> apiResponse = response.body();
                         if (apiResponse.getCode() == 200) {
                             avatarUrl = apiResponse.getData();
-                            Picasso.get()
-                                    .load(avatarUrl)
-                                    .placeholder(R.drawable.ic_logo_orange)
-                                    .error(R.drawable.ic_logo_orange)
-                                    .into(ivAvatar);
+                            ImageLoader.loadImage(avatarUrl, ivAvatar);
                             Toast.makeText(ProfileEditActivity.this, "头像上传成功", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(ProfileEditActivity.this, "头像上传失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
@@ -329,6 +326,21 @@ public class ProfileEditActivity extends AppCompatActivity {
         return extension != null ? extension : "jpg";
     }
 
+    // 添加一个工具方法
+    private String getFullImageUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return null;
+        }
+        // 如果已经是完整URL，直接返回
+        if (imageUrl.startsWith("http")) {
+            // 替换 localhost 为 10.0.2.2
+            return imageUrl.replace("localhost", "10.0.2.2");
+        }
+        // 相对路径，拼接完整URL
+        return "http://10.0.2.2:8080" + imageUrl;
+    }
+
+    // 修改 loadUserInfo 方法
     private void loadUserInfo() {
         if (prefs.contains("user_id")) {
             String name = prefs.getString("username", "");
@@ -341,11 +353,8 @@ public class ProfileEditActivity extends AppCompatActivity {
             etPhone.setText(phone);
 
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                Picasso.get()
-                        .load(avatarUrl)
-                        .placeholder(R.drawable.ic_logo_orange)
-                        .error(R.drawable.ic_logo_orange)
-                        .into(ivAvatar);
+                String fullUrl = getFullImageUrl(avatarUrl);
+                ImageLoader.loadImage(avatarUrl, ivAvatar);
             } else {
                 ivAvatar.setImageResource(R.drawable.ic_logo_orange);
             }
@@ -354,6 +363,31 @@ public class ProfileEditActivity extends AppCompatActivity {
             etTitle.setText("");
             etPhone.setText("");
             ivAvatar.setImageResource(R.drawable.ic_logo_orange);
+        }
+    }
+
+    // 修改 uploadImageToServer 方法中的图片加载
+    public void onResponse(Call<ApiResponse<String>> call, Response<ApiResponse<String>> response) {
+        isUploadingAvatar = false;
+        btnSave.setEnabled(true);
+        btnSave.setText("保存修改");
+
+        if (response.isSuccessful() && response.body() != null) {
+            ApiResponse<String> apiResponse = response.body();
+            if (apiResponse.getCode() == 200) {
+                avatarUrl = apiResponse.getData();
+                String fullUrl = getFullImageUrl(avatarUrl);
+                Picasso.get()
+                        .load(fullUrl)
+                        .placeholder(R.drawable.ic_logo_orange)
+                        .error(R.drawable.ic_logo_orange)
+                        .into(ivAvatar);
+                Toast.makeText(ProfileEditActivity.this, "头像上传成功", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(ProfileEditActivity.this, "头像上传失败: " + apiResponse.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(ProfileEditActivity.this, "头像上传失败", Toast.LENGTH_SHORT).show();
         }
     }
 
