@@ -419,16 +419,25 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 builder.append("\n");
             }
 
-            String itemText = "· " + ingredientName;
+            // 判断食材是否存在
+            boolean hasIngredient = userIngredientNames.contains(ingredientName);
+
+            String itemText;
+            if (hasIngredient) {
+                itemText = "· " + ingredientName;
+            } else {
+                itemText = "· " + ingredientName + "（缺）";
+            }
+
             int start = builder.length();
             builder.append(itemText);
             int end = builder.length();
 
             int color;
-            if (userIngredientNames.contains(ingredientName)) {
-                color = Color.parseColor("#4CAF50");
+            if (hasIngredient) {
+                color = Color.parseColor("#4CAF50");  // 绿色
             } else {
-                color = Color.parseColor("#F44336");
+                color = Color.parseColor("#F44336");  // 红色
             }
 
             builder.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
