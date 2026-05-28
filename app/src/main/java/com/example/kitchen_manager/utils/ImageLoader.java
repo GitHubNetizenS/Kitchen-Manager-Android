@@ -6,7 +6,7 @@ import com.squareup.picasso.Picasso;
 
 public class ImageLoader {
 
-    private static final String BASE_URL = "http://10.68.169.201:8080";
+    private static final String BASE_URL = "http://47.99.60.212:8080";
 
     public static void loadImage(String imageUrl, ImageView imageView) {
         String fullUrl = getFullUrl(imageUrl);
