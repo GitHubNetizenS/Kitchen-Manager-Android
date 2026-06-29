@@ -301,7 +301,7 @@ public interface ApiService {
      */
     @POST("/api/cart/update-status")
     @FormUrlEncoded
-    Call<ApiResponse<Void>> updateIngredientStatus(
+    Call<ApiResponse<List<Map<String, Object>>>> updateIngredientStatus(
             @Field("user_id") int userId,
             @Field("recipe_id") int recipeId,
             @Field("ingredient_id") int ingredientId,

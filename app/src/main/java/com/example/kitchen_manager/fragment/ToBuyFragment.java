@@ -108,11 +108,7 @@ public class ToBuyFragment extends Fragment {
             rvRecipes.setVisibility(View.GONE);
             return;
         }
-        for (Map<String, Object> recipe : shoppingCartRecipes) {
-            if (!recipe.containsKey("isExpanded")) {
-                recipe.put("isExpanded", false);
-            }
-        }
+        Map<Integer, Boolean> expandedStates = captureExpandedStates();
 
         progressBar.setVisibility(View.VISIBLE);
         empty.setVisibility(View.GONE);
@@ -127,26 +123,7 @@ public class ToBuyFragment extends Fragment {
                         progressBar.setVisibility(View.GONE);
 
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                            shoppingCartRecipes = response.body().getData();
-
-                            if (shoppingCartRecipes == null || shoppingCartRecipes.isEmpty()) {
-                                empty.setVisibility(View.VISIBLE);
-                                empty.setText("购物车为空，请先添加菜谱");
-                                rvRecipes.setVisibility(View.GONE);
-                            } else {
-                                empty.setVisibility(View.GONE);
-                                rvRecipes.setVisibility(View.VISIBLE);
-
-                                // 为每个菜谱添加展开状态字段（如果不存在）
-                                for (Map<String, Object> recipe : shoppingCartRecipes) {
-                                    if (!recipe.containsKey("isExpanded")) {
-                                        recipe.put("isExpanded", false);
-                                    }
-                                }
-
-                                adapter.setRecipes(shoppingCartRecipes);
-                                adapter.notifyDataSetChanged();
-                            }
+                            applyShoppingCartData(response.body().getData(), expandedStates);
                         } else {
                             empty.setVisibility(View.VISIBLE);
                             empty.setText("加载失败，请重试");
@@ -163,6 +140,51 @@ public class ToBuyFragment extends Fragment {
                         t.printStackTrace();
                     }
                 });
+    }
+
+    private Map<Integer, Boolean> captureExpandedStates() {
+        Map<Integer, Boolean> expandedStates = new HashMap<>();
+        for (Map<String, Object> recipe : shoppingCartRecipes) {
+            Integer recipeId = getRecipeId(recipe);
+            if (recipeId != null) {
+                Object expandedObj = recipe.get("isExpanded");
+                expandedStates.put(recipeId, expandedObj instanceof Boolean && (Boolean) expandedObj);
+            }
+        }
+        return expandedStates;
+    }
+
+    private void applyShoppingCartData(List<Map<String, Object>> recipes,
+                                       Map<Integer, Boolean> expandedStates) {
+        shoppingCartRecipes = recipes == null ? new ArrayList<>() : recipes;
+
+        for (Map<String, Object> recipe : shoppingCartRecipes) {
+            Integer recipeId = getRecipeId(recipe);
+            recipe.put("isExpanded", recipeId != null && expandedStates.getOrDefault(recipeId, false));
+        }
+
+        adapter.setRecipes(shoppingCartRecipes);
+        adapter.notifyDataSetChanged();
+
+        if (shoppingCartRecipes.isEmpty()) {
+            empty.setVisibility(View.VISIBLE);
+            empty.setText("购物车为空，请先添加菜谱");
+            rvRecipes.setVisibility(View.GONE);
+        } else {
+            empty.setVisibility(View.GONE);
+            rvRecipes.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private Integer getRecipeId(Map<String, Object> recipe) {
+        if (recipe == null) {
+            return null;
+        }
+        Object recipeIdObj = recipe.get("recipeId");
+        if (recipeIdObj instanceof Number) {
+            return ((Number) recipeIdObj).intValue();
+        }
+        return null;
     }
 
     private class ShoppingCartAdapter extends RecyclerView.Adapter<ShoppingCartAdapter.RecipeViewHolder> {
@@ -445,52 +467,20 @@ public class ToBuyFragment extends Fragment {
                                         int recipePosition, int ingredientPosition) {
         if (userId == -1 || apiService == null) return;
 
-        // 保存当前展开状态
-        boolean wasExpanded = false;
-        if (recipePosition >= 0 && recipePosition < shoppingCartRecipes.size()) {
-            Map<String, Object> recipe = shoppingCartRecipes.get(recipePosition);
-            wasExpanded = (boolean) recipe.getOrDefault("isExpanded", false);
-        }
+        Map<Integer, Boolean> expandedStates = captureExpandedStates();
 
-        boolean finalWasExpanded = wasExpanded;
         apiService.updateIngredientStatus(userId, recipeId, ingredientId, status)
-                .enqueue(new Callback<ApiResponse<Void>>() {
+                .enqueue(new Callback<ApiResponse<List<Map<String, Object>>>>() {
                     @Override
-                    public void onResponse(Call<ApiResponse<Void>> call, Response<ApiResponse<Void>> response) {
+                    public void onResponse(Call<ApiResponse<List<Map<String, Object>>>> call,
+                                           Response<ApiResponse<List<Map<String, Object>>>> response) {
                         if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                            // 更新本地数据
-                            if (recipePosition >= 0 && recipePosition < shoppingCartRecipes.size()) {
-                                Map<String, Object> recipe = shoppingCartRecipes.get(recipePosition);
-
-                                // 恢复展开状态
-                                recipe.put("isExpanded", finalWasExpanded);
-
-                                @SuppressWarnings("unchecked")
-                                List<Map<String, Object>> ingredients =
-                                        (List<Map<String, Object>>) recipe.get("ingredients");
-
-                                if (ingredientPosition >= 0 && ingredientPosition < ingredients.size()) {
-                                    ingredients.get(ingredientPosition).put("status", status);
-
-                                    // 重新计算购买进度
-                                    int purchasedCount = 0;
-                                    for (Map<String, Object> ing : ingredients) {
-                                        if ("purchased".equals(ing.get("status"))) {
-                                            purchasedCount++;
-                                        }
-                                    }
-
-                                    recipe.put("purchasedCount", purchasedCount);
-
-                                    // 通知适配器更新该位置，但保持展开状态
-                                    adapter.notifyItemChanged(recipePosition);
-
-                                    if ("purchased".equals(status)) {
-                                        Toast.makeText(getContext(), "食材已购买并添加到库存", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(getContext(), "状态已更新", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
+                            List<Map<String, Object>> refreshedRecipes = response.body().getData();
+                            if (refreshedRecipes != null) {
+                                applyShoppingCartData(refreshedRecipes, expandedStates);
+                                Toast.makeText(getContext(), "状态已更新", Toast.LENGTH_SHORT).show();
+                            } else {
+                                loadShoppingCartData();
                             }
                         } else {
                             Toast.makeText(getContext(), "更新失败，请重试", Toast.LENGTH_SHORT).show();
@@ -500,7 +490,7 @@ public class ToBuyFragment extends Fragment {
                     }
 
                     @Override
-                    public void onFailure(Call<ApiResponse<Void>> call, Throwable t) {
+                    public void onFailure(Call<ApiResponse<List<Map<String, Object>>>> call, Throwable t) {
                         Toast.makeText(getContext(), "网络错误，请检查连接", Toast.LENGTH_SHORT).show();
                     }
                 });
